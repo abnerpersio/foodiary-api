@@ -1,5 +1,5 @@
-import { toKebabCase } from "@/lib/utils/lambda";
-import type { HandlerWithMetadata, HttpMetadata } from "@/types/http";
+import type { HandlerWithMetadata, HttpMetadata } from "@/shared/types/http";
+import { toKebabCase } from "@/shared/utils/lambda";
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import type * as iam from "aws-cdk-lib/aws-iam";
@@ -9,8 +9,8 @@ import type { StackProps } from "aws-cdk-lib/core";
 import type { Construct } from "constructs";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { BUILD_BASE_PATH, stackConfig } from "./config";
-import { createFunctionAsset } from "./utils";
+import { BUILD_BASE_PATH, stackConfig } from "../config";
+import { createFunctionAsset } from "../utils";
 
 type Env = Record<string, string>;
 
@@ -33,8 +33,8 @@ export class ApiGatewayStack extends cdk.Stack {
   ) {
     super(scope, id, stackProps);
 
-    this.api = new apigateway.RestApi(this, "api-gateway", {
-      restApiName: stackConfig.apiName,
+    this.api = new apigateway.RestApi(this, "ApiGateway", {
+      restApiName: stackConfig.apiGateway.apiName,
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
@@ -50,7 +50,6 @@ export class ApiGatewayStack extends cdk.Stack {
 
     this.apiKey = this.createApiKey();
     this.logGroup = this.createLogGroup();
-
     const files = this.listLambdaFiles();
 
     for (const file of files) {
@@ -69,22 +68,34 @@ export class ApiGatewayStack extends cdk.Stack {
   }
 
   private createLogGroup() {
-    return new logs.LogGroup(this, `${stackConfig.apiName}-logs`, {
-      logGroupName: `/aws/lambda/${stackConfig.apiName}`,
+    const { apiName } = stackConfig.apiGateway;
+
+    const logGroup = new logs.LogGroup(this, `${apiName}-logs`, {
+      logGroupName: `/aws/lambda/${apiName}`,
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
+
+    new cdk.CfnOutput(this, "ApiKeyId", {
+      value: logGroup.logGroupName,
+      description:
+        "Log group name (add to .env so you can run 'pnpm run logs')",
+    });
+
+    return logGroup;
   }
 
   private createApiKey() {
+    const { apiName } = stackConfig.apiGateway;
+
     const apiKey = new apigateway.ApiKey(this, "api-key", {
-      apiKeyName: `${stackConfig.apiName}-key`,
-      description: `API Key for ${stackConfig.apiName}`,
+      apiKeyName: `${apiName}-key`,
+      description: `API Key for ${apiName}`,
     });
 
     const usagePlan = new apigateway.UsagePlan(this, "usage-plan", {
-      name: `${stackConfig.apiName}-usage-plan`,
-      description: `Usage plan for ${stackConfig.apiName}`,
+      name: `${apiName}-usage-plan`,
+      description: `Usage plan for ${apiName}`,
       throttle: {
         rateLimit: 100,
         burstLimit: 200,
@@ -103,25 +114,26 @@ export class ApiGatewayStack extends cdk.Stack {
 
   private listLambdaFiles() {
     const list = fs
-      .readdirSync(BUILD_BASE_PATH)
-      .filter((file) => file.endsWith(".js"));
-    return Array.from(list);
+      .readdirSync(BUILD_BASE_PATH, { recursive: true })
+      .filter((file) => typeof file === "string" && file.endsWith(".js"));
+    return Array.from(list as string[]);
   }
 
   private createLambdaFunction(file: string) {
     const filePath = path.join(BUILD_BASE_PATH, file);
     const module = require(filePath);
 
-    const handler = module.handler as HandlerWithMetadata;
-    if (!handler?.metadata) return;
-    const metadata = handler.metadata;
+    const moduleHandler = module.handler as HandlerWithMetadata;
+    if (!moduleHandler?.metadata) return;
+    const metadata = moduleHandler.metadata;
 
     const name = toKebabCase(file.replace(".js", ""));
+    const { handler, asset } = createFunctionAsset(file);
 
     const lambdaFn = new lambda.Function(this, name, {
-      runtime: stackConfig.runtime,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(createFunctionAsset(file)),
+      runtime: stackConfig.lambda.runtime,
+      handler,
+      code: lambda.Code.fromAsset(asset),
       memorySize: 128,
       timeout: cdk.Duration.seconds(30),
       logGroup: this.logGroup,
@@ -152,7 +164,7 @@ export class ApiGatewayStack extends cdk.Stack {
 
   private mountLambdaOptions(metadata: HttpMetadata) {
     let options: apigateway.MethodOptions = {
-      apiKeyRequired: stackConfig.apiKeyRequired,
+      apiKeyRequired: stackConfig.apiGateway.apiKeyRequired,
     };
 
     if (metadata.authorizer === "jwt") {

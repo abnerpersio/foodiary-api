@@ -3,7 +3,7 @@ const { glob } = require("glob");
 const { sentryEsbuildPlugin } = require("@sentry/esbuild-plugin");
 
 async function buildAll() {
-  const entryPoints = await glob("./src/functions/*.ts");
+  const entryPoints = await glob("./src/functions/**/*.ts");
 
   await build({
     entryPoints,

@@ -9,7 +9,7 @@ import type {
   HttpUseCase,
   MiddyContext,
   MiddyEvent,
-} from "@/types/http";
+} from "@/shared/types/http";
 import middy, { type MiddlewareObj } from "@middy/core";
 import httpCors from "@middy/http-cors";
 import httpJsonBodyParser from "@middy/http-json-body-parser";

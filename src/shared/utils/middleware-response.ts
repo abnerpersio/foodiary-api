@@ -1,4 +1,4 @@
-import type { MiddyEvent } from "@/types/http";
+import type { MiddyEvent } from "@/shared/types/http";
 import type { Request } from "@middy/core";
 
 export function middlewareResponse(

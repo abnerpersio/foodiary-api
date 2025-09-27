@@ -2,7 +2,7 @@ import "@/config/sentry";
 
 import { corsConfig } from "@/config/cors";
 import { errorHandler } from "@/infra/middlewares/error-handler";
-import type { HandlerWithMetadata, HttpMetadata } from "@/types/http";
+import type { HandlerWithMetadata, HttpMetadata } from "@/shared/types/http";
 import middy from "@middy/core";
 import httpCors from "@middy/http-cors";
 import httpRouterHandler, { type Route } from "@middy/http-router";

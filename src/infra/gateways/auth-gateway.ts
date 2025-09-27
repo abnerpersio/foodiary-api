@@ -1,0 +1,212 @@
+import { Env } from "@/config/env";
+import {
+  AdminCreateUserCommand,
+  AdminLinkProviderForUserCommand,
+  InitiateAuthCommand,
+  ListUsersCommand,
+  SignUpCommand,
+  type UserType,
+} from "@aws-sdk/client-cognito-identity-provider";
+import { createHmac } from "node:crypto";
+import { cognitoClient } from "../clients/cognito";
+
+export class AuthGateway {
+  async signUp({
+    email,
+    password,
+  }: AuthGateway.SignUpParams): Promise<AuthGateway.SignUpResult> {
+    const command = new SignUpCommand({
+      ClientId: Env.cognitoClientId,
+      Username: email,
+      Password: password,
+      SecretHash: this.getSecretHash(email),
+    });
+
+    const { UserSub: externalId } = await cognitoClient.send(command);
+
+    if (!externalId) {
+      throw new Error(`Cannot sign up user: ${email}`);
+    }
+
+    return { externalId };
+  }
+
+  async signIn({
+    email,
+    password,
+  }: AuthGateway.SignInParams): Promise<AuthGateway.SignInResult> {
+    const command = new InitiateAuthCommand({
+      AuthFlow: "USER_PASSWORD_AUTH",
+      ClientId: Env.cognitoClientId,
+      AuthParameters: {
+        USERNAME: email,
+        PASSWORD: password,
+        SECRET_HASH: this.getSecretHash(email),
+      },
+    });
+
+    const { AuthenticationResult: result } = await cognitoClient.send(command);
+
+    if (!result?.AccessToken || !result?.RefreshToken) {
+      throw new Error(`Cannot sign up user: ${email}`);
+    }
+
+    return {
+      accessToken: result.AccessToken,
+      refreshToken: result.RefreshToken,
+    };
+  }
+
+  async createUser({
+    userPoolId,
+    email,
+    firstName,
+    lastName,
+    profileImage,
+  }: AuthGateway.CreateUserParams): Promise<AuthGateway.CreateUserResult> {
+    const command = new AdminCreateUserCommand({
+      UserPoolId: userPoolId,
+      Username: email,
+      MessageAction: "SUPPRESS",
+      UserAttributes: [
+        { Name: "given_name", Value: firstName },
+        { Name: "family_name", Value: lastName },
+        { Name: "email", Value: email },
+        { Name: "email_verified", Value: "true" },
+        { Name: "custom:profileImage", Value: profileImage || undefined },
+      ],
+    });
+
+    const { User: user } = await cognitoClient.send(command);
+
+    if (!user) {
+      throw new Error("Failed while trying to create the native user.");
+    }
+
+    return { user };
+  }
+
+  async getUserByEmail({
+    email,
+    userPoolId,
+  }: AuthGateway.GetUserByEmailParams): Promise<AuthGateway.GetUserByEmailResult> {
+    let paginationToken: string | undefined;
+    let user: UserType | undefined;
+
+    do {
+      const command = new ListUsersCommand({
+        UserPoolId: userPoolId,
+        AttributesToGet: ["sub"],
+        Filter: `email = "${email}"`,
+        Limit: 1,
+        PaginationToken: paginationToken,
+      });
+
+      const { PaginationToken: nextPaginationToken, Users: users = [] } =
+        await cognitoClient.send(command);
+
+      paginationToken = nextPaginationToken;
+
+      if (users[0]) {
+        user = users[0];
+        break;
+      }
+    } while (paginationToken);
+
+    return { user };
+  }
+
+  async linkProvider({
+    userPoolId,
+    nativeUserId,
+    providerName,
+    providerUserId,
+  }: AuthGateway.LinkProviderParams) {
+    const command = new AdminLinkProviderForUserCommand({
+      UserPoolId: userPoolId,
+      DestinationUser: {
+        ProviderName: "Cognito",
+        ProviderAttributeValue: nativeUserId,
+      },
+      SourceUser: {
+        ProviderName: providerName,
+        ProviderAttributeValue: providerUserId,
+        ProviderAttributeName: "Cognito_Subject",
+      },
+    });
+
+    await cognitoClient.send(command);
+  }
+
+  private getSecretHash(email: string) {
+    return createHmac("SHA256", Env.cognitoClientSecret)
+      .update(`${email}${Env.cognitoClientId}`)
+      .digest("base64");
+  }
+
+  // private parseRoles(
+  //   claims?: Record<string, string | number | boolean | string[]>
+  // ) {
+  //   if (!claims) return [Role.user];
+
+  //   try {
+  //     const roles = (claims["cognito:groups"] as string)
+  //       .slice(1, -1)
+  //       .split(",")
+  //       .map((s) => s.trim());
+  //     if (!roles) return [Role.user];
+  //     return roles;
+  //   } catch {
+  //     return [Role.user];
+  //   }
+  // }
+}
+
+export namespace AuthGateway {
+  export type SignUpParams = {
+    email: string;
+    password: string;
+  };
+
+  export type SignUpResult = {
+    externalId: string;
+  };
+
+  export type SignInParams = {
+    email: string;
+    password: string;
+  };
+
+  export type SignInResult = {
+    accessToken: string;
+    refreshToken: string;
+  };
+
+  export type CreateUserParams = {
+    userPoolId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profileImage: string | null;
+  };
+
+  export type CreateUserResult = {
+    user: UserType;
+  };
+
+  export type GetUserByEmailParams = {
+    userPoolId: string;
+    email: string;
+  };
+
+  export type GetUserByEmailResult = {
+    user: UserType | undefined;
+  };
+
+  export type LinkProviderParams = {
+    userPoolId: string;
+    nativeUserId: string;
+    providerName: string;
+    providerUserId: string;
+  };
+}

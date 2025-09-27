@@ -2,8 +2,8 @@ import * as cdk from "aws-cdk-lib";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import type { Construct } from "constructs";
-import { stackConfig } from "./config";
-import { createFunctionAsset } from "./utils";
+import { stackConfig } from "../config";
+import { createFunctionAsset } from "../utils";
 
 export class CognitoStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
@@ -14,7 +14,7 @@ export class CognitoStack extends cdk.Stack {
     super(scope, id, props);
 
     this.userPool = new cognito.UserPool(this, "UserPool", {
-      userPoolName: stackConfig.userPoolName,
+      userPoolName: stackConfig.cognito.userPoolName,
       mfa: cognito.Mfa.OFF,
       deletionProtection: true,
       selfSignUpEnabled: true,
@@ -34,15 +34,20 @@ export class CognitoStack extends cdk.Stack {
       },
     });
 
-    if (stackConfig.preSignUpPath) {
+    if (
+      stackConfig.cognito.preSignUpPath &&
+      stackConfig.cognito.preSignUpEnabled
+    ) {
+      const { handler, asset } = createFunctionAsset(
+        stackConfig.cognito.preSignUpPath
+      );
+
       const preSignUpTrigger = new lambda.Function(this, "PreSignUpTrigger", {
-        runtime: stackConfig.runtime,
-        handler: "index.handler",
+        runtime: stackConfig.lambda.runtime,
+        handler,
         memorySize: 128,
         timeout: cdk.Duration.seconds(30),
-        code: lambda.Code.fromAsset(
-          createFunctionAsset(stackConfig.preSignUpPath)
-        ),
+        code: lambda.Code.fromAsset(asset),
       });
 
       this.userPool.addTrigger(
@@ -53,7 +58,7 @@ export class CognitoStack extends cdk.Stack {
 
     this.userPoolClient = new cognito.UserPoolClient(this, "UserPoolClient", {
       userPool: this.userPool,
-      userPoolClientName: `${stackConfig.userPoolName}-client`,
+      userPoolClientName: `${stackConfig.cognito.userPoolName}-client`,
       generateSecret: true,
       authFlows: {
         userPassword: true,
@@ -68,7 +73,7 @@ export class CognitoStack extends cdk.Stack {
           cognito.OAuthScope.PROFILE,
           cognito.OAuthScope.OPENID,
         ],
-        callbackUrls: stackConfig.oauthBaseCallbacks.map(
+        callbackUrls: stackConfig.cognito.oauthBaseCallbacks.map(
           (domain) => `${domain}/auth/callback`
         ),
       },
@@ -88,14 +93,14 @@ export class CognitoStack extends cdk.Stack {
     this.userPoolDomain = new cognito.UserPoolDomain(this, "UserPoolDomain", {
       userPool: this.userPool,
       cognitoDomain: {
-        domainPrefix: stackConfig.userPoolDomainName,
+        domainPrefix: stackConfig.cognito.userPoolDomainName,
       },
     });
 
     new cognito.UserPoolIdentityProviderGoogle(this, "GoogleIdentityProvider", {
       userPool: this.userPool,
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: this.userPoolClient.userPoolClientId,
+      clientSecret: this.userPoolClient.userPoolClientSecret.toString(),
       attributeMapping: {
         email: cognito.ProviderAttribute.GOOGLE_EMAIL,
         givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,

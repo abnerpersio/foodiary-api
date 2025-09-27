@@ -1,13 +1,16 @@
-import { middlewareResponse } from '@/lib/utils/middleware-response';
-import type { MiddyEvent } from '@/types/http';
-import type { MiddlewareObj } from '@middy/core';
-import type { z } from 'zod';
+import type { MiddyEvent } from "@/shared/types/http";
+import { middlewareResponse } from "@/shared/utils/middleware-response";
+import type { MiddlewareObj } from "@middy/core";
+import type { z } from "zod";
 
 export function validator(schema: z.ZodSchema): MiddlewareObj<MiddyEvent> {
   return {
     before: async (request) => {
-      const { body, queryStringParameters, pathParameters, requestContext } = request.event;
-      const userId = (requestContext.authorizer?.jwt?.claims?.username as string | null) ?? null;
+      const { body, queryStringParameters, pathParameters, requestContext } =
+        request.event;
+      const userId =
+        (requestContext.authorizer?.jwt?.claims?.username as string | null) ??
+        null;
 
       const { error } = schema.safeParse({
         query: queryStringParameters,
@@ -21,7 +24,7 @@ export function validator(schema: z.ZodSchema): MiddlewareObj<MiddyEvent> {
       }
 
       const errors = error.issues.map((issue) => ({
-        field: issue.path.join('.'),
+        field: issue.path.join("."),
         message: issue.message,
       }));
 

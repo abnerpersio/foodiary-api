@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
-import { RelatorioEnsaiosStack } from "./stack";
+import { stackConfig } from "./config";
+import { MainStack } from "./stack";
 
 const app = new cdk.App();
 
-new RelatorioEnsaiosStack(app, "RelatorioEnsaiosStack");
+new MainStack(app, stackConfig.stackName);
