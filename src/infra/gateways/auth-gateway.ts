@@ -1,4 +1,5 @@
-import { Env } from "@/config/env";
+import { Injectable } from "@/kernel/decorators/injectable";
+import type { AppConfig } from "@/shared/config/app-config";
 import {
   AdminCreateUserCommand,
   AdminLinkProviderForUserCommand,
@@ -10,13 +11,16 @@ import {
 import { createHmac } from "node:crypto";
 import { cognitoClient } from "../clients/cognito";
 
+@Injectable()
 export class AuthGateway {
+  constructor(private readonly appConfig: AppConfig) {}
+
   async signUp({
     email,
     password,
   }: AuthGateway.SignUpParams): Promise<AuthGateway.SignUpResult> {
     const command = new SignUpCommand({
-      ClientId: Env.cognitoClientId,
+      ClientId: this.appConfig.auth.cognito.clientId,
       Username: email,
       Password: password,
       SecretHash: this.getSecretHash(email),
@@ -37,7 +41,7 @@ export class AuthGateway {
   }: AuthGateway.SignInParams): Promise<AuthGateway.SignInResult> {
     const command = new InitiateAuthCommand({
       AuthFlow: "USER_PASSWORD_AUTH",
-      ClientId: Env.cognitoClientId,
+      ClientId: this.appConfig.auth.cognito.clientId,
       AuthParameters: {
         USERNAME: email,
         PASSWORD: password,
@@ -139,8 +143,8 @@ export class AuthGateway {
   }
 
   private getSecretHash(email: string) {
-    return createHmac("SHA256", Env.cognitoClientSecret)
-      .update(`${email}${Env.cognitoClientId}`)
+    return createHmac("SHA256", this.appConfig.auth.cognito.clientSecret)
+      .update(`${email}${this.appConfig.auth.cognito.clientId}`)
       .digest("base64");
   }
 

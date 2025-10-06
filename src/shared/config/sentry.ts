@@ -1,4 +1,4 @@
-import { Env } from "@/config/env";
+import { Env } from "@/shared/config/env";
 import * as Sentry from "@sentry/aws-serverless";
 // import { nodeProfilingIntegration } from '@sentry/profiling-node';
 

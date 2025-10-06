@@ -1,7 +1,10 @@
+import { type Request } from "@middy/core";
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   Context,
 } from "aws-lambda";
+
+export type MiddyRequest<TEvent> = Request<TEvent>;
 
 export type MiddyEvent = Omit<
   APIGatewayProxyEventV2WithJWTAuthorizer,
@@ -14,33 +17,6 @@ export type MiddyContext = Context & {
   internal?: Record<string, unknown>;
 };
 
-export type DefaultData = Record<string, unknown> | undefined | unknown;
-
-export type HttpRequest<
-  TData extends DefaultData = undefined,
-  TParams extends Record<string, string> = Record<string, string>,
-  TQuery extends Record<string, string> = Record<string, string>,
-  TInternal = Record<string, unknown>
-> = {
-  body: TData;
-  params: TParams;
-  query: TQuery;
-  userId: string | null;
-  internal?: TInternal;
-};
-
-export type HttpResponse =
-  | {
-      status: number;
-      data?: Record<string, any> | Record<string, any>[];
-      message?: never;
-    }
-  | {
-      status: number;
-      message?: string;
-      data?: never;
-    };
-
 export type HttpMetadata = {
   route: string;
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ANY";
@@ -50,7 +26,3 @@ export type HttpMetadata = {
 export type HandlerWithMetadata = Function & {
   metadata?: HttpMetadata;
 };
-
-export interface HttpUseCase {
-  execute(request: HttpRequest<any>): Promise<HttpResponse>;
-}

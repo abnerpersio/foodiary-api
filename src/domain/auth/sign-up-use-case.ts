@@ -1,11 +1,8 @@
+import { type HttpUseCase } from "@/application/contracts/use-case";
 import { Account } from "@/application/entities/account";
 import type { AccountRepository } from "@/infra/database/dynamo/repositories/account-repository";
 import { AuthGateway } from "@/infra/gateways/auth-gateway";
-import type {
-  HttpRequest,
-  HttpResponse,
-  HttpUseCase,
-} from "@/shared/types/http";
+import { Injectable } from "@/kernel/decorators/injectable";
 import z from "zod";
 
 export const signUpSchema = z.object({
@@ -17,16 +14,24 @@ export const signUpSchema = z.object({
   }),
 });
 
-export class SignUpUseCase implements HttpUseCase {
+export namespace SignUpUseCase {
+  export type Body = {
+    email: string;
+    password: string;
+  };
+}
+
+@Injectable()
+export class SignUpUseCase implements HttpUseCase<"public"> {
   constructor(
     private readonly authGateway: AuthGateway,
     private readonly accountRepository: AccountRepository
   ) {}
 
   async execute(
-    input: HttpRequest<SignUpUseCase.Input>
-  ): Promise<HttpResponse> {
-    const { email, password } = input.body;
+    request: HttpUseCase.Request<"public", SignUpUseCase.Body>
+  ): Promise<HttpUseCase.Response> {
+    const { email, password } = request.body;
 
     const { externalId } = await this.authGateway.signUp({ email, password });
 
@@ -45,11 +50,4 @@ export class SignUpUseCase implements HttpUseCase {
       },
     };
   }
-}
-
-export namespace SignUpUseCase {
-  export type Input = {
-    email: string;
-    password: string;
-  };
 }

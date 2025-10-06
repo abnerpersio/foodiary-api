@@ -1,6 +1,7 @@
-const { build } = require("esbuild");
-const { glob } = require("glob");
-const { sentryEsbuildPlugin } = require("@sentry/esbuild-plugin");
+import { sentryEsbuildPlugin } from "@sentry/esbuild-plugin";
+import { build } from "esbuild";
+import esbuildPluginTsc from "esbuild-plugin-tsc";
+import { glob } from "glob";
 
 async function buildAll() {
   const entryPoints = await glob("./src/functions/**/*.ts");
@@ -18,9 +19,11 @@ async function buildAll() {
     outExtension: {
       ".js": ".js",
     },
-    external: ["aws-lambda"],
+    exclude: ["!@aws-sdk/client-cognito-identity-provider"],
+    external: ["aws-lambda", "!@aws-sdk/client-cognito-identity-provider"],
     tsconfig: "./tsconfig.build.json",
     plugins: [
+      esbuildPluginTsc(),
       sentryEsbuildPlugin({
         authToken: process.env.SENTRY_AUTH_TOKEN,
         org: process.env.SENTRY_ORG,

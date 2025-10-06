@@ -11,6 +11,8 @@
     "declarationMap": false,
     "exactOptionalPropertyTypes": false,
     "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "strict": true,
     "jsx": "react-jsx",
     "verbatimModuleSyntax": true,

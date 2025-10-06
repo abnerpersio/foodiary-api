@@ -1,12 +1,13 @@
-import "@/config/sentry";
+import "@/shared/config/sentry";
 
-import { corsConfig } from "@/config/cors";
+import type { HttpUseCase } from "@/application/contracts/use-case";
 import { errorHandler } from "@/infra/middlewares/error-handler";
+import { Registry } from "@/kernel/di/registry";
+import { corsConfig } from "@/shared/config/cors";
+import type { Constructor } from "@/shared/types/constructor";
 import type {
   HandlerWithMetadata,
   HttpMetadata,
-  HttpResponse,
-  HttpUseCase,
   MiddyContext,
   MiddyEvent,
 } from "@/shared/types/http";
@@ -17,7 +18,7 @@ import httpResponseSerializer from "@middy/http-response-serializer";
 import * as Sentry from "@sentry/node";
 import { HttpError } from "../errors/http-error";
 
-function prepareResponseBody(result: HttpResponse) {
+function prepareResponseBody(result: HttpUseCase.Response) {
   if (!result.data && !result.message) return undefined;
 
   if (result.message) {
@@ -31,10 +32,11 @@ type Middleware = MiddlewareObj<MiddyEvent>;
 
 export function httpAdapt(
   metadata: HttpMetadata,
-  ...params: [...Middleware[], HttpUseCase]
+  ...params: [...Middleware[], Constructor<HttpUseCase<any>>]
 ) {
   const middlewares = params.slice(0, -1) as Middleware[];
-  const useCase = params[params.length - 1] as HttpUseCase;
+  const useCaseImpl = params.at(-1) as Constructor<HttpUseCase<any>>;
+  const useCase = Registry.getInstance().resolve(useCaseImpl);
 
   const handler = middy()
     .use(errorHandler())
