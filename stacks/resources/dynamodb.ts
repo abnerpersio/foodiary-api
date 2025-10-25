@@ -15,9 +15,11 @@ export class DynamoDBStack extends cdk.Stack {
       partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.RETAIN,
-      pointInTimeRecovery: stackConfig.dynamo.pointInTimeRecovery,
-      pointInTimeRecoverySpecification:
-        stackConfig.dynamo.pointInTimeRecoverySpecification,
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled:
+          stackConfig.dynamo.pointInTimeRecoveryEnabled,
+        recoveryPeriodInDays: stackConfig.dynamo.recoveryPeriodInDays,
+      },
     });
 
     this.table.addGlobalSecondaryIndex({

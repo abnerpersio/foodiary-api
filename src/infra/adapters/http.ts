@@ -1,3 +1,5 @@
+import "reflect-metadata";
+
 import "@/shared/config/sentry";
 
 import type { HttpUseCase } from "@/application/contracts/use-case";
@@ -5,18 +7,13 @@ import { errorHandler } from "@/infra/middlewares/error-handler";
 import { Registry } from "@/kernel/di/registry";
 import { corsConfig } from "@/shared/config/cors";
 import type { Constructor } from "@/shared/types/constructor";
-import type {
-  HandlerWithMetadata,
-  HttpMetadata,
-  MiddyContext,
-  MiddyEvent,
-} from "@/shared/types/http";
+import type { MiddyContext, MiddyEvent } from "@/shared/types/http";
 import middy, { type MiddlewareObj } from "@middy/core";
 import httpCors from "@middy/http-cors";
 import httpJsonBodyParser from "@middy/http-json-body-parser";
 import httpResponseSerializer from "@middy/http-response-serializer";
 import * as Sentry from "@sentry/node";
-import { HttpError } from "../errors/http-error";
+import { AppError } from "../errors/app-error";
 
 function prepareResponseBody(result: HttpUseCase.Response) {
   if (!result.data && !result.message) return undefined;
@@ -30,80 +27,90 @@ function prepareResponseBody(result: HttpUseCase.Response) {
 
 type Middleware = MiddlewareObj<MiddyEvent>;
 
-export function httpAdapt(
-  metadata: HttpMetadata,
-  ...params: [...Middleware[], Constructor<HttpUseCase<any>>]
-) {
-  const middlewares = params.slice(0, -1) as Middleware[];
-  const useCaseImpl = params.at(-1) as Constructor<HttpUseCase<any>>;
-  const useCase = Registry.getInstance().resolve(useCaseImpl);
+type HttpAdapterParams = {
+  middlewares?: Middleware[];
+  useCase: Constructor<HttpUseCase<any>>;
+};
 
-  const handler = middy()
-    .use(errorHandler())
-    .use(httpJsonBodyParser({ disableContentTypeError: true }))
-    .use(
-      httpResponseSerializer({
-        defaultContentType: "application/json",
-        serializers: [
-          {
-            regex: /^application\/json$/,
-            serializer: ({ body }) => JSON.stringify(body),
-          },
-        ],
-      })
-    )
-    .use(
-      httpCors({
-        origins: corsConfig.origins,
-        headers: corsConfig.headers,
-        requestMethods: corsConfig.methods,
-      })
-    )
-    .use([...middlewares])
-    .handler(async (event: MiddyEvent, context: MiddyContext) => {
-      try {
-        const { body, queryStringParameters, pathParameters, requestContext } =
-          event;
-        const userId =
-          (requestContext.authorizer?.jwt?.claims?.username as string | null) ??
-          null;
+export class HttpAdapter {
+  private readonly middlewares: Middleware[];
+  private readonly useCase: HttpUseCase<any>;
 
-        const result = await useCase.execute({
-          query: queryStringParameters || {},
-          params: pathParameters,
-          body: body ?? {},
-          userId,
-          internal: context.internal,
-        } as any);
+  constructor({ middlewares = [], useCase: useCaseImpl }: HttpAdapterParams) {
+    this.middlewares = middlewares;
+    this.useCase = Registry.getInstance().resolve(useCaseImpl);
+  }
 
-        return {
-          statusCode: result.status,
-          body: prepareResponseBody(result),
-        };
-      } catch (error) {
-        if (!(error instanceof HttpError)) {
-          console.warn("[Error handler] unhandled error", error);
+  adapt() {
+    return middy()
+      .use(errorHandler())
+      .use(httpJsonBodyParser({ disableContentTypeError: true }))
+      .use(
+        httpResponseSerializer({
+          defaultContentType: "application/json",
+          serializers: [
+            {
+              regex: /^application\/json$/,
+              serializer: ({ body }) => JSON.stringify(body),
+            },
+          ],
+        })
+      )
+      .use(
+        httpCors({
+          origins: corsConfig.origins,
+          headers: corsConfig.headers,
+          requestMethods: corsConfig.methods,
+        })
+      )
+      .use([...this.middlewares])
+      .handler(async (event: MiddyEvent, context: MiddyContext) => {
+        try {
+          const {
+            body,
+            queryStringParameters,
+            pathParameters,
+            requestContext,
+          } = event;
+          const userId =
+            (requestContext.authorizer?.jwt?.claims?.username as
+              | string
+              | null) ?? null;
 
-          Sentry.captureException(error, (scope) => {
-            scope.setTag("path", event.rawPath);
-            scope.setTag("routeKey", event.routeKey);
-            const body = JSON.stringify(event.body, null, 2);
-            scope.setContext("Request", { body });
-            return scope;
-          });
+          const result = await this.useCase.execute({
+            query: queryStringParameters || {},
+            params: pathParameters,
+            body: body ?? {},
+            userId,
+            internal: context.internal,
+          } as any);
+
+          return {
+            statusCode: result.status,
+            body: prepareResponseBody(result),
+          };
+        } catch (error) {
+          if (!(error instanceof AppError)) {
+            console.warn("[Error handler] unhandled error", error);
+
+            Sentry.captureException(error, (scope) => {
+              scope.setTag("path", event.rawPath);
+              scope.setTag("routeKey", event.routeKey);
+              const body = JSON.stringify(event.body, null, 2);
+              scope.setContext("Request", { body });
+              return scope;
+            });
+          }
+
+          const statusCode = error instanceof AppError ? error.statusCode : 500;
+          const message =
+            error instanceof AppError ? error.message : "Internal server error";
+
+          return {
+            statusCode,
+            body: { message },
+          };
         }
-
-        const statusCode = error instanceof HttpError ? error.statusCode : 500;
-        const message =
-          error instanceof HttpError ? error.message : "Internal server error";
-
-        return {
-          statusCode,
-          body: { message },
-        };
-      }
-    });
-
-  (handler as HandlerWithMetadata).metadata = metadata;
-  return handler;
+      });
+  }
 }

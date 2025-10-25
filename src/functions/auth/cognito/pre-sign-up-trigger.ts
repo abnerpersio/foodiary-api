@@ -1,9 +1,9 @@
 import { AuthGateway } from "@/infra/gateways/auth-gateway";
+import { Registry } from "@/kernel/di/registry";
 import type { PreSignUpTriggerEvent } from "aws-lambda";
 
 const EXTERNAL_TRIGGER = "PreSignUp_ExternalProvider" as const;
-
-const authGateway = new AuthGateway();
+const authGateway = Registry.getInstance().resolve(AuthGateway);
 
 export const handler = async (event: PreSignUpTriggerEvent) => {
   event.response.autoConfirmUser = true;

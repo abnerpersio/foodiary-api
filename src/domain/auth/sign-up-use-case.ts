@@ -1,7 +1,8 @@
 import { type HttpUseCase } from "@/application/contracts/use-case";
 import { Account } from "@/application/entities/account";
 import type { AccountRepository } from "@/infra/database/dynamo/repositories/account-repository";
-import { AuthGateway } from "@/infra/gateways/auth-gateway";
+import { EmailAlreadyInUse } from "@/infra/errors/email-already-in-use";
+import type { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
 import z from "zod";
 
@@ -33,9 +34,13 @@ export class SignUpUseCase implements HttpUseCase<"public"> {
   ): Promise<HttpUseCase.Response> {
     const { email, password } = request.body;
 
+    const alreadyInUse = await this.accountRepository.findByEmail(email);
+    if (alreadyInUse) throw new EmailAlreadyInUse();
+
     const { externalId } = await this.authGateway.signUp({ email, password });
 
     const account = new Account({ externalId, email });
+    await this.accountRepository.create(account);
 
     const { accessToken, refreshToken } = await this.authGateway.signIn({
       email,

@@ -1,4 +1,4 @@
-import type { HandlerWithMetadata, HttpMetadata } from "@/shared/types/http";
+import type { HttpMetadata } from "@/shared/types/http";
 import { toKebabCase } from "@/shared/utils/lambda";
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
@@ -10,7 +10,7 @@ import type { Construct } from "constructs";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { BUILD_BASE_PATH, stackConfig } from "../config";
-import { createFunctionAsset } from "../utils";
+import { createFunctionAsset, getRouteMetadata } from "../utils";
 
 type Env = Record<string, string>;
 
@@ -76,7 +76,7 @@ export class ApiGatewayStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    new cdk.CfnOutput(this, "ApiKeyId", {
+    new cdk.CfnOutput(this, "LogGroupName", {
       value: logGroup.logGroupName,
       description:
         "Log group name (add to .env so you can run 'pnpm run logs')",
@@ -120,12 +120,8 @@ export class ApiGatewayStack extends cdk.Stack {
   }
 
   private createLambdaFunction(file: string) {
-    const filePath = path.join(BUILD_BASE_PATH, file);
-    const module = require(filePath);
-
-    const moduleHandler = module.handler as HandlerWithMetadata;
-    if (!moduleHandler?.metadata) return;
-    const metadata = moduleHandler.metadata;
+    const metadata = getRouteMetadata(path.join(BUILD_BASE_PATH, file));
+    if (!metadata) return;
 
     const name = toKebabCase(file.replace(".js", ""));
     const { handler, asset } = createFunctionAsset(file);

@@ -22,7 +22,3 @@ export type HttpMetadata = {
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ANY";
   authorizer?: "jwt";
 };
-
-export type HandlerWithMetadata = Function & {
-  metadata?: HttpMetadata;
-};

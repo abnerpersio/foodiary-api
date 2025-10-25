@@ -1,11 +1,11 @@
-import { signUpSchema, SignUpUseCase } from "@/domain/auth/sign-up-use-case";
+import { signInSchema, SignInUseCase } from "@/domain/auth/sign-in-use-case";
 import { HttpAdapter } from "@/infra/adapters/http";
 import { validator } from "@/infra/middlewares/validator";
 
 export const handler = new HttpAdapter({
-  middlewares: [validator(signUpSchema)],
-  useCase: SignUpUseCase,
+  middlewares: [validator(signInSchema)],
+  useCase: SignInUseCase,
 }).adapt;
 
 export const METHOD = "POST";
-export const ROUTE = "/sign-up";
+export const ROUTE = "/sign-in";

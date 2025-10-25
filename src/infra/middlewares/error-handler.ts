@@ -1,14 +1,15 @@
-import { HttpError } from "@/infra/errors/http-error";
+import { AppError } from "@/infra/errors/app-error";
 import type { MiddyEvent } from "@/shared/types/http";
 import type { MiddlewareObj } from "@middy/core";
 import * as Sentry from "@sentry/node";
+import { ErrorCode } from "../errors/error-code";
 
 export function errorHandler(): MiddlewareObj<MiddyEvent> {
   return {
     onError: async (event) => {
       const { error, event: request } = event;
 
-      if (!(error instanceof HttpError)) {
+      if (!(error instanceof AppError)) {
         console.warn("[Error handler] unhandled error", error);
 
         Sentry.captureException(error, (scope) => {
@@ -25,12 +26,16 @@ export function errorHandler(): MiddlewareObj<MiddyEvent> {
         ...event.response?.headers,
         "Content-Type": "application/json",
       };
-      const statusCode = error instanceof HttpError ? error.statusCode : 500;
+      const statusCode = error instanceof AppError ? error.statusCode : 500;
+      const code =
+        error instanceof AppError
+          ? error.code
+          : ErrorCode.INTERNAL_SERVER_ERROR;
       const message =
-        error instanceof HttpError ? error.message : "Internal server error";
+        error instanceof AppError ? error.message : "Internal server error";
 
       event.response.statusCode = statusCode;
-      event.response.body = JSON.stringify({ message });
+      event.response.body = JSON.stringify({ code, message });
       event.response.headers = headers;
       return event.response;
     },

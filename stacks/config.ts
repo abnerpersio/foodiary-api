@@ -27,11 +27,11 @@ export const stackConfig = {
     userPoolDomainName: projectName,
     oauthBaseCallbacks: ["http://localhost:5173"],
     preSignUpEnabled: true,
-    preSignUpPath: "pre-sign-up-trigger.js",
+    preSignUpPath: "cognito/pre-sign-up-trigger.js",
   },
   dynamo: {
     tableName: `${projectNameWithEnv}-MainTable`,
-    pointInTimeRecovery: false,
-    pointInTimeRecoverySpecification: 30,
+    pointInTimeRecoveryEnabled: false,
+    recoveryPeriodInDays: undefined,
   },
 };

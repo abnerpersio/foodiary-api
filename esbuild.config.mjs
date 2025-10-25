@@ -19,7 +19,6 @@ async function buildAll() {
     outExtension: {
       ".js": ".js",
     },
-    exclude: ["!@aws-sdk/client-cognito-identity-provider"],
     external: ["aws-lambda", "!@aws-sdk/client-cognito-identity-provider"],
     tsconfig: "./tsconfig.build.json",
     plugins: [

@@ -2,7 +2,6 @@ import "@/shared/config/sentry";
 
 import { errorHandler } from "@/infra/middlewares/error-handler";
 import { corsConfig } from "@/shared/config/cors";
-import type { HandlerWithMetadata, HttpMetadata } from "@/shared/types/http";
 import middy from "@middy/core";
 import httpCors from "@middy/http-cors";
 import httpRouterHandler, { type Route } from "@middy/http-router";
@@ -28,19 +27,22 @@ const optionsHandler: Route<APIGatewayProxyEventV2, APIGatewayProxyResultV2> = {
   },
 };
 
-export function routesAdapt(metadata: HttpMetadata, routes: Route<any, any>[]) {
-  const handler = middy()
-    .use(errorHandler())
-    .use(
-      httpCors({
-        // origins: corsConfig.origins,
-        origins: ["*"],
-        headers: corsConfig.headers,
-        requestMethods: corsConfig.methods,
-      })
-    )
-    .handler(httpRouterHandler([optionsHandler as Route<any, any>, ...routes]));
+export class RouteAdapter {
+  constructor(private readonly routes: Route<any, any>[]) {}
 
-  (handler as HandlerWithMetadata).metadata = metadata;
-  return handler;
+  adapt() {
+    return middy()
+      .use(errorHandler())
+      .use(
+        httpCors({
+          // origins: corsConfig.origins,
+          origins: ["*"],
+          headers: corsConfig.headers,
+          requestMethods: corsConfig.methods,
+        })
+      )
+      .handler(
+        httpRouterHandler([optionsHandler as Route<any, any>, ...this.routes])
+      );
+  }
 }
