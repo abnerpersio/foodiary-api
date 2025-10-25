@@ -1,5 +1,5 @@
 import { Injectable } from "@/kernel/decorators/injectable";
-import type { AppConfig } from "@/shared/config/app-config";
+import { AppConfig } from "@/shared/config/app-config";
 import {
   AdminCreateUserCommand,
   AdminLinkProviderForUserCommand,

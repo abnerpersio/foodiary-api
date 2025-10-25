@@ -1,8 +1,8 @@
 import { type HttpUseCase } from "@/application/contracts/use-case";
 import { Account } from "@/application/entities/account";
-import type { AccountRepository } from "@/infra/database/dynamo/repositories/account-repository";
+import { AccountRepository } from "@/infra/database/dynamo/repositories/account-repository";
 import { EmailAlreadyInUse } from "@/infra/errors/email-already-in-use";
-import type { AuthGateway } from "@/infra/gateways/auth-gateway";
+import { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
 import z from "zod";
 
@@ -16,10 +16,7 @@ export const signUpSchema = z.object({
 });
 
 export namespace SignUpUseCase {
-  export type Body = {
-    email: string;
-    password: string;
-  };
+  export type Body = z.infer<typeof signUpSchema>["body"];
 }
 
 @Injectable()
@@ -32,7 +29,7 @@ export class SignUpUseCase implements HttpUseCase<"public"> {
   async execute(
     request: HttpUseCase.Request<"public", SignUpUseCase.Body>
   ): Promise<HttpUseCase.Response> {
-    const { email, password } = request.body;
+    const { email, password } = request.body.account;
 
     const alreadyInUse = await this.accountRepository.findByEmail(email);
     if (alreadyInUse) throw new EmailAlreadyInUse();

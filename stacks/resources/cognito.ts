@@ -35,15 +35,17 @@ export class CognitoStack extends cdk.Stack {
     });
 
     if (
-      stackConfig.cognito.preSignUpPath &&
+      stackConfig.cognito.preSignUpFnPath &&
       stackConfig.cognito.preSignUpEnabled
     ) {
       const { handler, asset } = createFunctionAsset(
-        stackConfig.cognito.preSignUpPath
+        stackConfig.cognito.preSignUpFnPath
       );
 
-      const preSignUpTrigger = new lambda.Function(this, "PreSignUpTrigger", {
+      const functionName = `${stackConfig.projectName}-pre-sign-up-trigger`;
+      const preSignUpTrigger = new lambda.Function(this, functionName, {
         runtime: stackConfig.lambda.runtime,
+        functionName,
         handler,
         memorySize: 128,
         timeout: cdk.Duration.seconds(30),
@@ -55,6 +57,24 @@ export class CognitoStack extends cdk.Stack {
         preSignUpTrigger
       );
     }
+
+    const googleProvider = new cognito.UserPoolIdentityProviderGoogle(
+      this,
+      "GoogleIdentityProvider",
+      {
+        userPool: this.userPool,
+        clientId: stackConfig.google.clientId,
+        clientSecretValue: cdk.SecretValue.unsafePlainText(
+          stackConfig.google.clientSecret
+        ),
+        attributeMapping: {
+          email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+          givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
+          familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+        },
+        scopes: ["profile", "email", "openid"],
+      }
+    );
 
     this.userPoolClient = new cognito.UserPoolClient(this, "UserPoolClient", {
       userPool: this.userPool,
@@ -84,6 +104,8 @@ export class CognitoStack extends cdk.Stack {
       ],
     });
 
+    this.userPoolClient.node.addDependency(googleProvider);
+
     new cognito.CfnUserPoolGroup(this, "AdminsUserGroup", {
       userPoolId: this.userPool.userPoolId,
       groupName: "superadmin",
@@ -94,17 +116,6 @@ export class CognitoStack extends cdk.Stack {
       userPool: this.userPool,
       cognitoDomain: {
         domainPrefix: stackConfig.cognito.userPoolDomainName,
-      },
-    });
-
-    new cognito.UserPoolIdentityProviderGoogle(this, "GoogleIdentityProvider", {
-      userPool: this.userPool,
-      clientId: this.userPoolClient.userPoolClientId,
-      clientSecretValue: this.userPoolClient.userPoolClientSecret,
-      attributeMapping: {
-        email: cognito.ProviderAttribute.GOOGLE_EMAIL,
-        givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
-        familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
       },
     });
   }

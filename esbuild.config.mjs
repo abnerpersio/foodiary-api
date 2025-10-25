@@ -9,6 +9,7 @@ async function buildAll() {
   await build({
     entryPoints,
     bundle: true,
+    outbase: "src/functions",
     outdir: "dist",
     platform: "node",
     target: "node22",
@@ -21,9 +22,11 @@ async function buildAll() {
     },
     external: ["aws-lambda", "!@aws-sdk/client-cognito-identity-provider"],
     tsconfig: "./tsconfig.build.json",
+    inject: ["./src/shared/polyfills/reflect-metadata.js"],
     plugins: [
-      esbuildPluginTsc(),
+      esbuildPluginTsc({ tsconfigPath: "./tsconfig.build.json" }),
       sentryEsbuildPlugin({
+        telemetry: false,
         authToken: process.env.SENTRY_AUTH_TOKEN,
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,

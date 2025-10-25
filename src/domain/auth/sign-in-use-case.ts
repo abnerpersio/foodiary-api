@@ -1,5 +1,5 @@
 import { type HttpUseCase } from "@/application/contracts/use-case";
-import type { AuthGateway } from "@/infra/gateways/auth-gateway";
+import { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
 import z from "zod";
 
@@ -11,10 +11,7 @@ export const signInSchema = z.object({
 });
 
 export namespace SignInUseCase {
-  export type Body = {
-    email: string;
-    password: string;
-  };
+  export type Body = z.infer<typeof signInSchema>["body"];
 }
 
 @Injectable()

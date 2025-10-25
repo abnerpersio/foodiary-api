@@ -6,6 +6,3 @@ export const handler = new HttpAdapter({
   middlewares: [validator(signUpSchema)],
   useCase: SignUpUseCase,
 }).adapt;
-
-export const METHOD = "POST";
-export const ROUTE = "/sign-up";

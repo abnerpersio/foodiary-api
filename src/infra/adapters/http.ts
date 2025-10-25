@@ -37,7 +37,7 @@ export class HttpAdapter {
   private readonly useCase: HttpUseCase<any>;
 
   constructor({ middlewares = [], useCase: useCaseImpl }: HttpAdapterParams) {
-    this.middlewares = middlewares;
+    this.middlewares = middlewares || [];
     this.useCase = Registry.getInstance().resolve(useCaseImpl);
   }
 
@@ -63,7 +63,7 @@ export class HttpAdapter {
           requestMethods: corsConfig.methods,
         })
       )
-      .use([...this.middlewares])
+      .use(this.middlewares)
       .handler(async (event: MiddyEvent, context: MiddyContext) => {
         try {
           const {

@@ -1,23 +1,22 @@
-import type { HttpMetadata } from "@/shared/types/http";
+import { ROUTES, type Route } from "@/routes";
 import { toKebabCase } from "@/shared/utils/lambda";
 import * as cdk from "aws-cdk-lib";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import type * as iam from "aws-cdk-lib/aws-iam";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as logs from "aws-cdk-lib/aws-logs";
 import type { StackProps } from "aws-cdk-lib/core";
 import type { Construct } from "constructs";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { BUILD_BASE_PATH, stackConfig } from "../config";
-import { createFunctionAsset, getRouteMetadata } from "../utils";
+import { stackConfig } from "../config";
+import { createFunctionAsset } from "../utils";
 
 type Env = Record<string, string>;
 
 type GatewayProps = {
   environment: Env;
-  role: iam.IRole;
-  authorizer: apigateway.CognitoUserPoolsAuthorizer;
+  table: cdk.aws_dynamodb.ITable;
+  userPool: cdk.aws_cognito.IUserPool;
+  bucket: cdk.aws_s3.IBucket;
 };
 
 export class ApiGatewayStack extends cdk.Stack {
@@ -50,10 +49,15 @@ export class ApiGatewayStack extends cdk.Stack {
 
     this.apiKey = this.createApiKey();
     this.logGroup = this.createLogGroup();
-    const files = this.listLambdaFiles();
+    const role = this.createLambdaRole(gatewayProps);
+    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
+      this,
+      "cognito-authorizer",
+      { cognitoUserPools: [gatewayProps.userPool] }
+    );
 
-    for (const file of files) {
-      this.createLambdaFunction(file);
+    for (const route of ROUTES) {
+      this.createLambdaFunction(route, role, authorizer);
     }
 
     new cdk.CfnOutput(this, "ApiUrl", {
@@ -112,21 +116,73 @@ export class ApiGatewayStack extends cdk.Stack {
     return apiKey;
   }
 
-  private listLambdaFiles() {
-    const list = fs
-      .readdirSync(BUILD_BASE_PATH, { recursive: true })
-      .filter((file) => typeof file === "string" && file.endsWith(".js"));
-    return Array.from(list as string[]);
+  private createLambdaRole({
+    table,
+    bucket,
+    userPool,
+  }: Pick<GatewayProps, "table" | "userPool" | "bucket">) {
+    const role = new iam.Role(this, `${stackConfig.projectName}-lambda-role`, {
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+      description: `Role used by ${stackConfig.projectName} Lambda functions`,
+    });
+
+    // DynamoDB
+    role.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+        ],
+        resources: [table.tableArn, `${table.tableArn}/index/*`],
+      })
+    );
+
+    // Cognito
+    role.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminCreateUser",
+          "cognito-idp:AdminLinkProviderForUser",
+        ],
+        resources: [userPool.userPoolArn],
+      })
+    );
+
+    // S3
+    role.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:GetObject", "s3:PutObject"],
+        resources: [bucket.bucketArn, `${bucket.bucketArn}/*`],
+      })
+    );
+
+    role.addManagedPolicy(
+      cdk.aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
+        "service-role/AWSLambdaBasicExecutionRole"
+      )
+    );
+
+    return role;
   }
 
-  private createLambdaFunction(file: string) {
-    const metadata = getRouteMetadata(path.join(BUILD_BASE_PATH, file));
-    if (!metadata) return;
-
-    const name = toKebabCase(file.replace(".js", ""));
-    const { handler, asset } = createFunctionAsset(file);
+  private createLambdaFunction(
+    route: Route,
+    role: iam.Role,
+    authorizer: apigateway.CognitoUserPoolsAuthorizer
+  ) {
+    const name = toKebabCase(route.fnPath.replace(/\//g, "--"));
+    const { handler, asset } = createFunctionAsset(route.fnPath);
 
     const lambdaFn = new lambda.Function(this, name, {
+      functionName: `${stackConfig.projectName}-${name}`,
       runtime: stackConfig.lambda.runtime,
       handler,
       code: lambda.Code.fromAsset(asset),
@@ -134,19 +190,19 @@ export class ApiGatewayStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       logGroup: this.logGroup,
       environment: this.gatewayProps.environment,
-      role: this.gatewayProps.role,
+      role,
     });
 
-    const resource = this.getResource(metadata);
+    const resource = this.getResource(route);
 
     resource.addMethod(
-      metadata.method || "ANY",
+      route.method || "ANY",
       new apigateway.LambdaIntegration(lambdaFn),
-      this.mountLambdaOptions(metadata)
+      this.mountLambdaOptions(route, authorizer)
     );
   }
 
-  private getResource(metadata: HttpMetadata) {
+  private getResource(metadata: Omit<Route, "fnPath">) {
     const routeParts = metadata.route.split("/").filter((part) => part);
     let currentResource = this.api.root;
 
@@ -158,7 +214,10 @@ export class ApiGatewayStack extends cdk.Stack {
     return currentResource;
   }
 
-  private mountLambdaOptions(metadata: HttpMetadata) {
+  private mountLambdaOptions(
+    metadata: Omit<Route, "fnPath">,
+    authorizer: apigateway.CognitoUserPoolsAuthorizer
+  ) {
     let options: apigateway.MethodOptions = {
       apiKeyRequired: stackConfig.apiGateway.apiKeyRequired,
     };
@@ -166,7 +225,7 @@ export class ApiGatewayStack extends cdk.Stack {
     if (metadata.authorizer === "jwt") {
       options = {
         ...options,
-        authorizer: this.gatewayProps.authorizer,
+        authorizer,
         authorizationType: apigateway.AuthorizationType.COGNITO,
       };
     }

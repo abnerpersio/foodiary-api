@@ -22,12 +22,16 @@ export const stackConfig = {
   storage: {
     bucketName: `${projectNameWithEnv}-storage`,
   },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID as string,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+  },
   cognito: {
     userPoolName: `${projectNameWithEnv}-pool`,
     userPoolDomainName: projectName,
     oauthBaseCallbacks: ["http://localhost:5173"],
     preSignUpEnabled: true,
-    preSignUpPath: "cognito/pre-sign-up-trigger.js",
+    preSignUpFnPath: "auth/cognito/pre-sign-up-trigger",
   },
   dynamo: {
     tableName: `${projectNameWithEnv}-MainTable`,

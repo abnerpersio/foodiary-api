@@ -1,7 +1,7 @@
 import type { Account } from "@/application/entities/account";
 import { dynamoClient } from "@/infra/clients/dynamo";
 import { Injectable } from "@/kernel/decorators/injectable";
-import type { AppConfig } from "@/shared/config/app-config";
+import { AppConfig } from "@/shared/config/app-config";
 import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { AccountItem } from "../items/account-item";
 

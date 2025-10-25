@@ -6,6 +6,3 @@ export const handler = new HttpAdapter({
   middlewares: [validator(signInSchema)],
   useCase: SignInUseCase,
 }).adapt;
-
-export const METHOD = "POST";
-export const ROUTE = "/sign-in";

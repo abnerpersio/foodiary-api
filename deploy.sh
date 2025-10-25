@@ -13,6 +13,8 @@ fi
 
 echo "🧹 Cleaning previous builds..."
 pnpm run clean
+rm -rf dist 
+rm -rf lambda-pkg
 
 echo "📦 Installing dependencies..."
 pnpm install
