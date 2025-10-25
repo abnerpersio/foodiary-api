@@ -3,7 +3,10 @@ import "reflect-metadata";
 import "@/shared/config/sentry";
 
 import type { HttpUseCase } from "@/application/contracts/use-case";
-import { errorHandler } from "@/infra/middlewares/error-handler";
+import {
+  errorHandle,
+  errorHandlerMiddleware,
+} from "@/infra/middlewares/error-handler";
 import { Registry } from "@/kernel/di/registry";
 import { corsConfig } from "@/shared/config/cors";
 import type { Constructor } from "@/shared/types/constructor";
@@ -12,8 +15,6 @@ import middy, { type MiddlewareObj } from "@middy/core";
 import httpCors from "@middy/http-cors";
 import httpJsonBodyParser from "@middy/http-json-body-parser";
 import httpResponseSerializer from "@middy/http-response-serializer";
-import * as Sentry from "@sentry/node";
-import { AppError } from "../errors/app-error";
 
 function prepareResponseBody(result: HttpUseCase.Response) {
   if (!result.data && !result.message) return undefined;
@@ -41,9 +42,9 @@ export class HttpAdapter {
     this.useCase = Registry.getInstance().resolve(useCaseImpl);
   }
 
-  adapt() {
+  build() {
     return middy()
-      .use(errorHandler())
+      .use(errorHandlerMiddleware())
       .use(httpJsonBodyParser({ disableContentTypeError: true }))
       .use(
         httpResponseSerializer({
@@ -90,26 +91,8 @@ export class HttpAdapter {
             body: prepareResponseBody(result),
           };
         } catch (error) {
-          if (!(error instanceof AppError)) {
-            console.warn("[Error handler] unhandled error", error);
-
-            Sentry.captureException(error, (scope) => {
-              scope.setTag("path", event.rawPath);
-              scope.setTag("routeKey", event.routeKey);
-              const body = JSON.stringify(event.body, null, 2);
-              scope.setContext("Request", { body });
-              return scope;
-            });
-          }
-
-          const statusCode = error instanceof AppError ? error.statusCode : 500;
-          const message =
-            error instanceof AppError ? error.message : "Internal server error";
-
-          return {
-            statusCode,
-            body: { message },
-          };
+          const { body, statusCode } = errorHandle(error, event);
+          return { statusCode, body };
         }
       });
   }

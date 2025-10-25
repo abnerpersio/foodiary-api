@@ -1,6 +1,6 @@
 import "@/shared/config/sentry";
 
-import { errorHandler } from "@/infra/middlewares/error-handler";
+import { errorHandlerMiddleware } from "@/infra/middlewares/error-handler";
 import { corsConfig } from "@/shared/config/cors";
 import middy from "@middy/core";
 import httpCors from "@middy/http-cors";
@@ -32,7 +32,7 @@ export class RouteAdapter {
 
   adapt() {
     return middy()
-      .use(errorHandler())
+      .use(errorHandlerMiddleware())
       .use(
         httpCors({
           // origins: corsConfig.origins,

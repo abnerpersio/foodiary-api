@@ -4,9 +4,8 @@
     "clean": "rm -rf dist cdk.out",
     "logs": "aws logs tail $LOG_GROUP_NAME --follow",
     "cdk": "cdk",
-    "deploy": "cdk deploy --all -y",
-    "destroy": "cdk destroy",
-    "synth": "cdk synth",
+    "deploy": "bash deploy.sh",
+    "deploy:gateway": "bash deploy.sh --gateway",
     "test": "jest"
   },
   "devDependencies": {

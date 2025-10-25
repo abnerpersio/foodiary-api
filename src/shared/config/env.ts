@@ -1,3 +1,5 @@
+import { AppError } from "@/infra/errors/app-error";
+import { ErrorCode } from "@/infra/errors/error-code";
 import * as Sentry from "@sentry/node";
 import { z } from "zod";
 
@@ -31,9 +33,9 @@ const { error, data } = schema.safeParse({
 
 if (error?.issues?.length) {
   const message = JSON.stringify(error?.issues, null, 2);
-  const thrownError = new Error(`[Env] invalid variables: ${message}`);
-  Sentry.captureException(thrownError);
-  throw thrownError;
+  console.error(`[Env] invalid variables: ${message}`);
+  Sentry.captureMessage(`[Env] invalid variables: ${message}`);
+  throw new AppError(500, "Internal server error", ErrorCode.SYSTEM_CONFIG);
 }
 
 export const Env = data!;

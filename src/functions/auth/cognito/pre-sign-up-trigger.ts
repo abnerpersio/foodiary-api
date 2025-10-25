@@ -1,9 +1,45 @@
+import { Account } from "@/application/entities/account";
+import { AccountRepository } from "@/infra/database/dynamo/repositories/account-repository";
 import { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Registry } from "@/kernel/di/registry";
 import type { PreSignUpTriggerEvent } from "aws-lambda";
 
 const EXTERNAL_TRIGGER = "PreSignUp_ExternalProvider" as const;
 const authGateway = Registry.getInstance().resolve(AuthGateway);
+const accountRepository = Registry.getInstance().resolve(AccountRepository);
+
+const createUser = async ({
+  email,
+  familyName,
+  givenName,
+  userPoolId,
+}: {
+  email: string;
+  userPoolId: string;
+  givenName: string;
+  familyName: string;
+}) => {
+  const result = await authGateway.createUser({
+    email,
+    firstName: givenName,
+    lastName: familyName,
+    userPoolId,
+    profileImage: null,
+  });
+
+  const externalId = result.user.Attributes?.find(
+    (attr) => attr.Name === "sub"
+  )?.Value;
+
+  if (!externalId) {
+    throw new Error("Cannot create user to the native account.");
+  }
+
+  const account = new Account({ externalId, email });
+  await accountRepository.create(account);
+
+  return result.user;
+};
 
 export const handler = async (event: PreSignUpTriggerEvent) => {
   event.response.autoConfirmUser = true;
@@ -19,22 +55,19 @@ export const handler = async (event: PreSignUpTriggerEvent) => {
   let { user } = await authGateway.getUserByEmail({ email, userPoolId });
 
   if (!user) {
-    const result = await authGateway.createUser({
+    user = await createUser({
       email,
-      firstName: given_name,
-      lastName: family_name,
       userPoolId,
-      profileImage: null,
+      familyName: family_name,
+      givenName: given_name,
     });
-
-    user = result.user;
   }
 
-  const nativeUserId = user.Attributes?.find(
-    ({ Name }) => Name === "sub"
+  const externalId = user.Attributes?.find(
+    (attr) => attr.Name === "sub"
   )?.Value;
 
-  if (!nativeUserId) {
+  if (!externalId) {
     throw new Error("Cannot link External Provider to the native account.");
   }
 
@@ -42,7 +75,7 @@ export const handler = async (event: PreSignUpTriggerEvent) => {
 
   await authGateway.linkProvider({
     userPoolId,
-    nativeUserId,
+    nativeUserId: externalId,
     providerName,
     providerUserId,
   });

@@ -15,7 +15,7 @@ type Env = Record<string, string>;
 type GatewayProps = {
   environment: Env;
   table: cdk.aws_dynamodb.ITable;
-  userPool: cdk.aws_cognito.IUserPool;
+  userPool: cdk.aws_cognito.UserPool;
   bucket: cdk.aws_s3.IBucket;
 };
 

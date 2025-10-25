@@ -14,7 +14,7 @@ export class AccountRepository {
       TableName: this.appConfig.db.dynamodb.mainTable,
       IndexName: "GSI1",
       Limit: 1,
-      KeyConditionExpression: "#GSI1PK = :GSI1PK, #GSI1SK = :GSI1SK",
+      KeyConditionExpression: "#GSI1PK = :GSI1PK AND #GSI1SK = :GSI1SK",
       ExpressionAttributeNames: {
         "#GSI1PK": "GSI1PK",
         "#GSI1SK": "GSI1SK",

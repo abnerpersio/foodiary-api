@@ -5,4 +5,4 @@ import { validator } from "@/infra/middlewares/validator";
 export const handler = new HttpAdapter({
   middlewares: [validator(signInSchema)],
   useCase: SignInUseCase,
-}).adapt;
+}).build();

@@ -22,7 +22,10 @@ async function buildAll() {
     },
     external: ["aws-lambda", "!@aws-sdk/client-cognito-identity-provider"],
     tsconfig: "./tsconfig.build.json",
-    inject: ["./src/shared/polyfills/reflect-metadata.js"],
+    inject: [
+      "./src/shared/polyfills/env.js",
+      "./src/shared/polyfills/reflect-metadata.js",
+    ],
     plugins: [
       esbuildPluginTsc({ tsconfigPath: "./tsconfig.build.json" }),
       sentryEsbuildPlugin({
