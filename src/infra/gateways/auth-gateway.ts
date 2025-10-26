@@ -23,6 +23,7 @@ export class AuthGateway {
       ClientId: this.appConfig.auth.cognito.clientId,
       Username: email,
       Password: password,
+      UserAttributes: [{ Name: "email", Value: email }],
       SecretHash: this.getSecretHash(email),
     });
 

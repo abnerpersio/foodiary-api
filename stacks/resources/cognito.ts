@@ -28,17 +28,17 @@ export class CognitoStack extends cdk.Stack {
       selfSignUpEnabled: true,
       autoVerify: { email: true },
       passwordPolicy: {
-        minLength: 10,
-        requireLowercase: true,
-        requireUppercase: true,
+        minLength: 8,
+        requireLowercase: false,
+        requireUppercase: false,
         requireDigits: false,
-        requireSymbols: true,
+        requireSymbols: false,
         tempPasswordValidity: cdk.Duration.days(2),
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       standardAttributes: {
-        givenName: { required: true, mutable: true },
-        familyName: { required: true, mutable: true },
+        givenName: { required: false, mutable: true },
+        familyName: { required: false, mutable: true },
       },
     });
 
