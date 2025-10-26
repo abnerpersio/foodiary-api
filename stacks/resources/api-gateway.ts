@@ -5,7 +5,6 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as logs from "aws-cdk-lib/aws-logs";
-import type { StackProps } from "aws-cdk-lib/core";
 import type { Construct } from "constructs";
 import { stackConfig } from "../config";
 import { createFunctionAsset } from "../utils";
@@ -14,9 +13,8 @@ type Env = Record<string, string>;
 
 type GatewayProps = {
   environment: Env;
-  table: cdk.aws_dynamodb.ITable;
   userPool: cdk.aws_cognito.UserPool;
-  bucket: cdk.aws_s3.IBucket;
+  role: iam.Role;
 };
 
 export class ApiGatewayStack extends cdk.Stack {
@@ -27,10 +25,9 @@ export class ApiGatewayStack extends cdk.Stack {
   constructor(
     scope: Construct,
     id: string,
-    stackProps: StackProps | undefined,
     private readonly gatewayProps: GatewayProps
   ) {
-    super(scope, id, stackProps);
+    super(scope, id);
 
     this.api = new apigateway.RestApi(this, "ApiGateway", {
       restApiName: stackConfig.apiGateway.apiName,
@@ -49,7 +46,6 @@ export class ApiGatewayStack extends cdk.Stack {
 
     this.apiKey = this.createApiKey();
     this.logGroup = this.createLogGroup();
-    const role = this.createLambdaRole(gatewayProps);
     const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
       this,
       "cognito-authorizer",
@@ -57,7 +53,7 @@ export class ApiGatewayStack extends cdk.Stack {
     );
 
     for (const route of ROUTES) {
-      this.createLambdaFunction(route, role, authorizer);
+      this.createLambdaFunction(route, authorizer);
     }
 
     new cdk.CfnOutput(this, "ApiUrl", {
@@ -116,66 +112,8 @@ export class ApiGatewayStack extends cdk.Stack {
     return apiKey;
   }
 
-  private createLambdaRole({
-    table,
-    bucket,
-    userPool,
-  }: Pick<GatewayProps, "table" | "userPool" | "bucket">) {
-    const role = new iam.Role(this, `${stackConfig.projectName}-lambda-role`, {
-      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
-      description: `Role used by ${stackConfig.projectName} Lambda functions`,
-    });
-
-    // DynamoDB
-    role.addToPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "dynamodb:PutItem",
-          "dynamodb:GetItem",
-          "dynamodb:UpdateItem",
-          "dynamodb:DeleteItem",
-          "dynamodb:Query",
-        ],
-        resources: [table.tableArn, `${table.tableArn}/index/*`],
-      })
-    );
-
-    // Cognito
-    role.addToPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "cognito-idp:AdminGetUser",
-          "cognito-idp:ListUsers",
-          "cognito-idp:AdminCreateUser",
-          "cognito-idp:AdminLinkProviderForUser",
-        ],
-        resources: [userPool.userPoolArn],
-      })
-    );
-
-    // S3
-    role.addToPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ["s3:GetObject", "s3:PutObject"],
-        resources: [bucket.bucketArn, `${bucket.bucketArn}/*`],
-      })
-    );
-
-    role.addManagedPolicy(
-      cdk.aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
-        "service-role/AWSLambdaBasicExecutionRole"
-      )
-    );
-
-    return role;
-  }
-
   private createLambdaFunction(
     route: Route,
-    role: iam.Role,
     authorizer: apigateway.CognitoUserPoolsAuthorizer
   ) {
     const name = toKebabCase(route.fnPath.replace(/\//g, "--"));
@@ -190,7 +128,7 @@ export class ApiGatewayStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       logGroup: this.logGroup,
       environment: this.gatewayProps.environment,
-      role,
+      role: this.gatewayProps.role,
     });
 
     const resource = this.getResource(route);

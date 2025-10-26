@@ -1,15 +1,14 @@
 import "dotenv/config";
 
 import * as cdk from "aws-cdk-lib";
-import * as cognito from "aws-cdk-lib/aws-cognito";
-import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as awsCognito from "aws-cdk-lib/aws-cognito";
+import * as iam from "aws-cdk-lib/aws-iam";
 import type { Construct } from "constructs";
 import { stackConfig } from "./config";
 import { ApiGatewayStack } from "./resources/api-gateway";
 import { CognitoStack } from "./resources/cognito";
 import { DynamoDBStack } from "./resources/dynamodb";
 import { S3Stack } from "./resources/s3";
-import { createFunctionAsset } from "./utils";
 
 export class MainStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -17,13 +16,18 @@ export class MainStack extends cdk.Stack {
 
     const s3 = new S3Stack(this, "S3Stack");
     const dynamo = new DynamoDBStack(this, "DynamoStack");
-    const cognito = new CognitoStack(this, "CognitoStack", undefined);
 
-    const environment = {
+    let environment = {
       ...stackConfig.baseEnvironment,
       MAIN_TABLE_NAME: dynamo.table.tableName,
       NODE_ENV: stackConfig.environment,
       STORAGE_BUCKET_NAME: s3.bucket.bucketName,
+    } as Record<string, string>;
+
+    const cognito = new CognitoStack(this, "CognitoStack", { environment });
+
+    environment = {
+      ...environment,
       COGNITO_CLIENT_ID: cognito.userPoolClient.userPoolClientId,
       COGNITO_CLIENT_SECRET:
         cognito.userPoolClient.userPoolClientSecret.unsafeUnwrap(),
@@ -31,38 +35,74 @@ export class MainStack extends cdk.Stack {
       COGNITO_POOL_DOMAIN: cognito.userPoolDomain.domainName,
     };
 
-    new ApiGatewayStack(this, "api-gateway-stack", undefined, {
-      environment,
+    const role = this.createLambdaRole({
       table: dynamo.table,
       userPool: cognito.userPool,
       bucket: s3.bucket,
     });
 
-    this.addPreSignUpTrigger(cognito.userPool, environment);
+    new ApiGatewayStack(this, "api-gateway-stack", {
+      environment,
+      userPool: cognito.userPool,
+      role,
+    });
   }
 
-  private addPreSignUpTrigger(
-    userPool: cdk.aws_cognito.UserPool,
-    environment: Record<string, string>
-  ) {
-    const preSignUpFnPath = stackConfig.cognito.preSignUpFnPath;
-    if (!preSignUpFnPath || !stackConfig.cognito.preSignUpEnabled) {
-      return;
-    }
-
-    const { handler, asset } = createFunctionAsset(preSignUpFnPath);
-
-    const functionName = `${stackConfig.projectName}-pre-sign-up-trigger`;
-    const lambdaFn = new lambda.Function(this, functionName, {
-      functionName,
-      runtime: stackConfig.lambda.runtime,
-      handler,
-      memorySize: 128,
-      timeout: cdk.Duration.seconds(30),
-      code: lambda.Code.fromAsset(asset),
-      environment,
+  private createLambdaRole({
+    table,
+    bucket,
+    userPool,
+  }: {
+    table: cdk.aws_dynamodb.ITable;
+    userPool: awsCognito.UserPool;
+    bucket: cdk.aws_s3.IBucket;
+  }) {
+    const role = new iam.Role(this, `${stackConfig.projectName}-lambda-role`, {
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+      description: `Role used by ${stackConfig.projectName} Lambda functions`,
     });
 
-    userPool.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, lambdaFn);
+    role.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+        ],
+        resources: [table.tableArn, `${table.tableArn}/index/*`],
+      })
+    );
+
+    role.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminCreateUser",
+          "cognito-idp:AdminLinkProviderForUser",
+        ],
+        resources: [userPool.userPoolArn],
+      })
+    );
+
+    role.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:GetObject", "s3:PutObject"],
+        resources: [bucket.bucketArn, `${bucket.bucketArn}/*`],
+      })
+    );
+
+    role.addManagedPolicy(
+      cdk.aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
+        "service-role/AWSLambdaBasicExecutionRole"
+      )
+    );
+
+    return role;
   }
 }

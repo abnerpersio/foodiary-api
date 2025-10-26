@@ -1,15 +1,25 @@
 import * as cdk from "aws-cdk-lib";
 import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 import type { Construct } from "constructs";
+import { createFunctionAsset } from "stacks/utils";
 import { stackConfig } from "../config";
+
+type CognitoProps = {
+  environment: Record<string, string>;
+};
 
 export class CognitoStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
   public readonly userPoolClient: cognito.UserPoolClient;
   public readonly userPoolDomain: cognito.UserPoolDomain;
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+  constructor(
+    scope: Construct,
+    id: string,
+    private readonly cognitoProps: CognitoProps
+  ) {
+    super(scope, id);
 
     this.userPool = new cognito.UserPool(this, "UserPool", {
       userPoolName: stackConfig.cognito.userPoolName,
@@ -92,5 +102,35 @@ export class CognitoStack extends cdk.Stack {
         domainPrefix: stackConfig.cognito.userPoolDomainName,
       },
     });
+
+    this.createPreSignUpLambda();
+  }
+
+  private createPreSignUpLambda() {
+    if (
+      !stackConfig.cognito.preSignUpFnPath ||
+      !stackConfig.cognito.preSignUpEnabled
+    ) {
+      return;
+    }
+
+    const preSignUpFnPath = stackConfig.cognito.preSignUpFnPath!;
+    const { handler, asset } = createFunctionAsset(preSignUpFnPath);
+
+    const functionName = `${stackConfig.projectName}-pre-sign-up-trigger`;
+    const lambdaFn = new lambda.Function(this, "PreSignUpTrigger", {
+      functionName,
+      runtime: stackConfig.lambda.runtime,
+      handler,
+      memorySize: 128,
+      timeout: cdk.Duration.seconds(30),
+      code: lambda.Code.fromAsset(asset),
+      environment: {
+        ...this.cognitoProps.environment,
+        ENV_IGNORE_SETUP: "true",
+      },
+    });
+
+    this.userPool.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, lambdaFn);
   }
 }
