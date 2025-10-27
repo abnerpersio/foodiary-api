@@ -7,7 +7,9 @@ export class DynamoDBStack extends cdk.Stack {
   public readonly table: dynamodb.Table;
 
   constructor(scope: Construct, id: string) {
-    super(scope, id);
+    super(scope, id, {
+      stackName: stackConfig.stackName.concat("-dynamo"),
+    });
 
     this.table = new dynamodb.Table(this, "MainTable", {
       tableName: stackConfig.dynamo.tableName,

@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as logs from "aws-cdk-lib/aws-logs";
 import type { Construct } from "constructs";
 import { createFunctionAsset } from "stacks/utils";
 import { stackConfig } from "../config";
@@ -19,7 +20,9 @@ export class CognitoStack extends cdk.Stack {
     id: string,
     private readonly cognitoProps: CognitoProps
   ) {
-    super(scope, id);
+    super(scope, id, {
+      stackName: stackConfig.stackName.concat("-cognito"),
+    });
 
     this.userPool = new cognito.UserPool(this, "UserPool", {
       userPoolName: stackConfig.cognito.userPoolName,
@@ -90,6 +93,8 @@ export class CognitoStack extends cdk.Stack {
       ],
     });
 
+    this.userPoolClient.node.addDependency(googleProvider);
+
     new cognito.CfnUserPoolGroup(this, "AdminsUserGroup", {
       userPoolId: this.userPool.userPoolId,
       groupName: "superadmin",
@@ -117,6 +122,16 @@ export class CognitoStack extends cdk.Stack {
     const preSignUpFnPath = stackConfig.cognito.preSignUpFnPath!;
     const { handler, asset } = createFunctionAsset(preSignUpFnPath);
 
+    const logGroup = new logs.LogGroup(
+      this,
+      `${stackConfig.stackName}-pre-sign-up-trigger-logs`,
+      {
+        logGroupName: `/aws/lambda/${stackConfig.stackName}-pre-sign-up-trigger`,
+        retention: logs.RetentionDays.ONE_WEEK,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      }
+    );
+
     const functionName = `${stackConfig.projectName}-pre-sign-up-trigger`;
     const lambdaFn = new lambda.Function(this, "PreSignUpTrigger", {
       functionName,
@@ -125,6 +140,7 @@ export class CognitoStack extends cdk.Stack {
       memorySize: 128,
       timeout: cdk.Duration.seconds(30),
       code: lambda.Code.fromAsset(asset),
+      logGroup,
       environment: {
         ...this.cognitoProps.environment,
         ENV_IGNORE_SETUP: "true",

@@ -1,7 +1,9 @@
 import { ROUTES, type Route } from "@/routes";
 import { toKebabCase } from "@/shared/utils/lambda";
 import * as cdk from "aws-cdk-lib";
-import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as apigatewayv2 from "aws-cdk-lib/aws-apigatewayv2";
+import { HttpJwtAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
+import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as logs from "aws-cdk-lib/aws-logs";
@@ -14,56 +16,56 @@ type Env = Record<string, string>;
 type GatewayProps = {
   environment: Env;
   userPool: cdk.aws_cognito.UserPool;
+  userPoolClient: cdk.aws_cognito.UserPoolClient;
   role: iam.Role;
 };
 
 export class ApiGatewayStack extends cdk.Stack {
-  private api: cdk.aws_apigateway.RestApi;
-  private apiKey: cdk.aws_apigateway.ApiKey;
+  private api: apigatewayv2.HttpApi;
   private logGroup: cdk.aws_logs.LogGroup;
+  private authorizer: HttpJwtAuthorizer;
 
   constructor(
     scope: Construct,
     id: string,
     private readonly gatewayProps: GatewayProps
   ) {
-    super(scope, id);
-
-    this.api = new apigateway.RestApi(this, "ApiGateway", {
-      restApiName: stackConfig.apiGateway.apiName,
-      defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
-        allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: ["Authorization", "Content-Type", "X-API-Key"],
-      },
-      deployOptions: {
-        stageName: "prod",
-        loggingLevel: apigateway.MethodLoggingLevel.OFF,
-        metricsEnabled: false,
-        dataTraceEnabled: false,
-      },
+    super(scope, id, {
+      stackName: stackConfig.stackName.concat("-apigateway"),
     });
 
-    this.apiKey = this.createApiKey();
     this.logGroup = this.createLogGroup();
-    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
-      this,
-      "cognito-authorizer",
-      { cognitoUserPools: [gatewayProps.userPool] }
-    );
+
+    const issuerUrl = gatewayProps.userPool.userPoolProviderUrl;
+    this.authorizer = new HttpJwtAuthorizer("JwtAuthorizer", issuerUrl, {
+      jwtAudience: [gatewayProps.userPoolClient.userPoolClientId],
+      identitySource: ["$request.header.Authorization"],
+    });
+
+    this.api = new apigatewayv2.HttpApi(this, "ApiGateway", {
+      apiName: stackConfig.apiGateway.apiName,
+      corsPreflight: {
+        allowOrigins: ["*"],
+        allowMethods: [
+          apigatewayv2.CorsHttpMethod.GET,
+          apigatewayv2.CorsHttpMethod.POST,
+          apigatewayv2.CorsHttpMethod.PUT,
+          apigatewayv2.CorsHttpMethod.DELETE,
+          apigatewayv2.CorsHttpMethod.PATCH,
+          apigatewayv2.CorsHttpMethod.OPTIONS,
+        ],
+        allowHeaders: ["Authorization", "Content-Type", "X-API-Key"],
+      },
+      defaultAuthorizer: undefined,
+    });
 
     for (const route of ROUTES) {
-      this.createLambdaFunction(route, authorizer);
+      this.createLambdaFunction(route);
     }
 
     new cdk.CfnOutput(this, "ApiUrl", {
-      value: this.api.url,
+      value: this.api.url!,
       description: "API Gateway URL",
-    });
-
-    new cdk.CfnOutput(this, "ApiKeyId", {
-      value: this.apiKey.keyId,
-      description: "API Key ID (use AWS CLI to get the actual key value)",
     });
   }
 
@@ -85,37 +87,7 @@ export class ApiGatewayStack extends cdk.Stack {
     return logGroup;
   }
 
-  private createApiKey() {
-    const { apiName } = stackConfig.apiGateway;
-
-    const apiKey = new apigateway.ApiKey(this, "api-key", {
-      apiKeyName: `${apiName}-key`,
-      description: `API Key for ${apiName}`,
-    });
-
-    const usagePlan = new apigateway.UsagePlan(this, "usage-plan", {
-      name: `${apiName}-usage-plan`,
-      description: `Usage plan for ${apiName}`,
-      throttle: {
-        rateLimit: 100,
-        burstLimit: 200,
-      },
-      quota: {
-        limit: 10000,
-        period: apigateway.Period.MONTH,
-      },
-      apiStages: [{ api: this.api, stage: this.api.deploymentStage }],
-    });
-
-    usagePlan.addApiKey(apiKey);
-
-    return apiKey;
-  }
-
-  private createLambdaFunction(
-    route: Route,
-    authorizer: apigateway.CognitoUserPoolsAuthorizer
-  ) {
+  private createLambdaFunction(route: Route) {
     const name = toKebabCase(route.fnPath.replace(/\//g, "--"));
     const { handler, asset } = createFunctionAsset(route.fnPath);
 
@@ -131,43 +103,36 @@ export class ApiGatewayStack extends cdk.Stack {
       role: this.gatewayProps.role,
     });
 
-    const resource = this.getResource(route);
-
-    resource.addMethod(
-      route.method || "ANY",
-      new apigateway.LambdaIntegration(lambdaFn),
-      this.mountLambdaOptions(route, authorizer)
+    const integration = new HttpLambdaIntegration(
+      `${name}-integration`,
+      lambdaFn
     );
+
+    const routePath = route.route;
+    const method = this.getHttpMethod(route.method);
+
+    this.api.addRoutes({
+      path: routePath,
+      methods: [method],
+      integration,
+      authorizer: route.authorizer === "jwt" ? this.authorizer : undefined,
+    });
   }
 
-  private getResource(metadata: Omit<Route, "fnPath">) {
-    const routeParts = metadata.route.split("/").filter((part) => part);
-    let currentResource = this.api.root;
-
-    for (const part of routeParts) {
-      const existingResource = currentResource.getResource(part);
-      currentResource = existingResource || currentResource.addResource(part);
-    }
-
-    return currentResource;
-  }
-
-  private mountLambdaOptions(
-    metadata: Omit<Route, "fnPath">,
-    authorizer: apigateway.CognitoUserPoolsAuthorizer
-  ) {
-    let options: apigateway.MethodOptions = {
-      apiKeyRequired: stackConfig.apiGateway.apiKeyRequired,
+  private getHttpMethod(method?: string): apigatewayv2.HttpMethod {
+    const methodMap: Record<string, apigatewayv2.HttpMethod> = {
+      GET: apigatewayv2.HttpMethod.GET,
+      POST: apigatewayv2.HttpMethod.POST,
+      PUT: apigatewayv2.HttpMethod.PUT,
+      DELETE: apigatewayv2.HttpMethod.DELETE,
+      PATCH: apigatewayv2.HttpMethod.PATCH,
+      OPTIONS: apigatewayv2.HttpMethod.OPTIONS,
+      HEAD: apigatewayv2.HttpMethod.HEAD,
+      ANY: apigatewayv2.HttpMethod.ANY,
     };
 
-    if (metadata.authorizer === "jwt") {
-      options = {
-        ...options,
-        authorizer,
-        authorizationType: apigateway.AuthorizationType.COGNITO,
-      };
-    }
-
-    return options;
+    return (
+      methodMap[method?.toUpperCase() || "ANY"] || apigatewayv2.HttpMethod.ANY
+    );
   }
 }

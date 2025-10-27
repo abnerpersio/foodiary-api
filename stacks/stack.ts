@@ -44,6 +44,7 @@ export class MainStack extends cdk.Stack {
     new ApiGatewayStack(this, "api-gateway-stack", {
       environment,
       userPool: cognito.userPool,
+      userPoolClient: cognito.userPoolClient,
       role,
     });
   }
