@@ -1,4 +1,5 @@
 import { type HttpUseCase } from "@/application/contracts/use-case";
+
 import { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
 import z from "zod";
@@ -20,9 +21,11 @@ export class ForgotPasswordUseCase implements HttpUseCase<"public"> {
   async execute(
     request: HttpUseCase.Request<"public", ForgotPasswordUseCase.Body>
   ): Promise<HttpUseCase.Response> {
-    const { email } = request.body;
+    try {
+      const { email } = request.body;
 
-    await this.authGateway.forgotPassword({ email });
+      await this.authGateway.forgotPassword({ email });
+    } catch {}
 
     return { status: 204 };
   }
