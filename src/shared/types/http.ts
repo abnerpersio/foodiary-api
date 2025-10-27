@@ -22,3 +22,19 @@ export type HttpMetadata = {
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "ANY";
   authorizer?: "jwt";
 };
+
+export type JWTClaims = {
+  auth_time: string;
+  client_id: string;
+  event_id: string;
+  exp: string;
+  iat: string;
+  iss: string;
+  jti: string;
+  origin_jti: string;
+  scope: string;
+  sub: string;
+  token_use: string;
+  username: string;
+  internalId: string;
+};

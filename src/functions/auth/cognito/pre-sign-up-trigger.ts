@@ -19,7 +19,10 @@ const createUser = async ({
   givenName: string;
   familyName: string;
 }) => {
+  const account = new Account({ email });
+
   const result = await authGateway.createUser({
+    internalId: account.id,
     email,
     firstName: givenName,
     lastName: familyName,
@@ -35,9 +38,8 @@ const createUser = async ({
     throw new Error("Cannot create user to the native account.");
   }
 
-  const account = new Account({ externalId, email });
+  account.externalId = externalId;
   await accountRepository.create(account);
-
   return result.user;
 };
 

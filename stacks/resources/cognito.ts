@@ -43,6 +43,9 @@ export class CognitoStack extends cdk.Stack {
         givenName: { required: false, mutable: true },
         familyName: { required: false, mutable: true },
       },
+      customAttributes: {
+        internalId: new cognito.StringAttribute({ mutable: true }),
+      },
     });
 
     const googleProvider = new cognito.UserPoolIdentityProviderGoogle(
@@ -108,32 +111,48 @@ export class CognitoStack extends cdk.Stack {
       },
     });
 
-    this.createPreSignUpLambda();
+    this.createPreSignUpTrigger();
+    this.createPreTokenTrigger();
   }
 
-  private createPreSignUpLambda() {
-    if (
-      !stackConfig.cognito.preSignUpFnPath ||
-      !stackConfig.cognito.preSignUpEnabled
-    ) {
-      return;
-    }
+  private createPreSignUpTrigger() {
+    const { cognito: cognitoConfig } = stackConfig;
 
-    const preSignUpFnPath = stackConfig.cognito.preSignUpFnPath!;
-    const { handler, asset } = createFunctionAsset(preSignUpFnPath);
+    if (cognitoConfig.preSignUpFnPath && cognitoConfig.preSignUpEnabled) {
+      this.userPool.addTrigger(
+        cognito.UserPoolOperation.PRE_SIGN_UP,
+        this.createLambda(stackConfig.cognito.preSignUpFnPath!, "pre-sign-up")
+      );
+    }
+  }
+
+  private createPreTokenTrigger() {
+    const { cognito: cognitoConfig } = stackConfig;
+
+    if (cognitoConfig.preTokenFnPath && cognitoConfig.preTokenEnabled) {
+      this.userPool.addTrigger(
+        cognito.UserPoolOperation.PRE_TOKEN_GENERATION_CONFIG,
+        this.createLambda(stackConfig.cognito.preTokenFnPath!, "pre-token"),
+        cognito.LambdaVersion.V2_0
+      );
+    }
+  }
+
+  private createLambda(fnPath: string, fnName: string) {
+    const { handler, asset } = createFunctionAsset(fnPath);
 
     const logGroup = new logs.LogGroup(
       this,
-      `${stackConfig.stackName}-pre-sign-up-trigger-logs`,
+      `${stackConfig.stackName}-${fnName}-logs`,
       {
-        logGroupName: `/aws/lambda/${stackConfig.stackName}-pre-sign-up-trigger`,
+        logGroupName: `/aws/lambda/${stackConfig.stackName}-${fnName}`,
         retention: logs.RetentionDays.ONE_WEEK,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
       }
     );
 
-    const functionName = `${stackConfig.projectName}-pre-sign-up-trigger`;
-    const lambdaFn = new lambda.Function(this, "PreSignUpTrigger", {
+    const functionName = `${stackConfig.projectName}-${fnName}`;
+    return new lambda.Function(this, fnName, {
       functionName,
       runtime: stackConfig.lambda.runtime,
       handler,
@@ -146,7 +165,5 @@ export class CognitoStack extends cdk.Stack {
         ENV_IGNORE_SETUP: "true",
       },
     });
-
-    this.userPool.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, lambdaFn);
   }
 }

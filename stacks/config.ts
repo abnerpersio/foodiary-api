@@ -33,6 +33,8 @@ namespace StackConfig {
       oauthBaseCallbacks: string[];
       preSignUpEnabled: boolean;
       preSignUpFnPath?: string;
+      preTokenEnabled: boolean;
+      preTokenFnPath?: string;
     };
     dynamo: {
       tableName: string;
@@ -67,6 +69,8 @@ export const stackConfig = {
     oauthBaseCallbacks: ["http://localhost:5173"],
     preSignUpEnabled: true,
     preSignUpFnPath: "auth/cognito/pre-sign-up-trigger",
+    preTokenEnabled: true,
+    preTokenFnPath: "auth/cognito/pre-token-trigger",
   },
   dynamo: {
     tableName: `${projectNameWithEnv}-MainTable`,

@@ -12,11 +12,11 @@ export namespace CreateMealUseCase {
 }
 
 @Injectable()
-export class CreateMealUseCase implements HttpUseCase<"public"> {
+export class CreateMealUseCase implements HttpUseCase<"private"> {
   constructor() {}
 
   async execute(
-    request: HttpUseCase.Request<"public", CreateMealUseCase.Body>
+    request: HttpUseCase.Request<"private", CreateMealUseCase.Body>
   ): Promise<HttpUseCase.Response> {
     return {
       status: 201,

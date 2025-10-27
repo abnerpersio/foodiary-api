@@ -18,7 +18,6 @@ export namespace HttpUseCase {
     body: TBody;
     params: TParams;
     query: TQueryParams;
-    userId: string | null;
     internal?: TInternal;
   };
 

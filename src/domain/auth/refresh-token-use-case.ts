@@ -1,35 +1,31 @@
 import { type HttpUseCase } from "@/application/contracts/use-case";
 import { AppError } from "@/infra/errors/app-error";
-import { InvalidCredentials } from "@/infra/errors/invalid-credentials";
+import { InvalidRefreshToken } from "@/infra/errors/invalid-refresh-token";
 import { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
 import z from "zod";
 
-export const signInSchema = z.object({
+export const refreshTokenSchema = z.object({
   body: z.object({
-    email: z.email("Invalid"),
-    password: z.string().min(8, "Should be at least 8 characters long"),
+    refreshToken: z.string(),
   }),
 });
 
-export namespace SignInUseCase {
-  export type Body = z.infer<typeof signInSchema>["body"];
+export namespace RefreshTokenUseCase {
+  export type Body = z.infer<typeof refreshTokenSchema>["body"];
 }
 
 @Injectable()
-export class SignInUseCase implements HttpUseCase<"public"> {
+export class RefreshTokenUseCase implements HttpUseCase<"public"> {
   constructor(private readonly authGateway: AuthGateway) {}
 
   async execute(
-    request: HttpUseCase.Request<"public", SignInUseCase.Body>
+    request: HttpUseCase.Request<"public", RefreshTokenUseCase.Body>
   ): Promise<HttpUseCase.Response> {
     try {
-      const { email, password } = request.body;
+      const { refreshToken } = request.body;
 
-      const result = await this.authGateway.signIn({
-        email,
-        password,
-      });
+      const result = await this.authGateway.refreshToken({ refreshToken });
 
       return {
         status: 200,
@@ -39,7 +35,7 @@ export class SignInUseCase implements HttpUseCase<"public"> {
         },
       };
     } catch {
-      throw new InvalidCredentials();
+      throw new InvalidRefreshToken();
     }
   }
 }

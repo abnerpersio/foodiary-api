@@ -3,9 +3,13 @@ import { AppConfig } from "@/shared/config/app-config";
 import {
   AdminCreateUserCommand,
   AdminLinkProviderForUserCommand,
+  ConfirmForgotPasswordCommand,
+  ForgotPasswordCommand,
+  GetTokensFromRefreshTokenCommand,
   InitiateAuthCommand,
   ListUsersCommand,
   SignUpCommand,
+  UserNotFoundException,
   type UserType,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { createHmac } from "node:crypto";
@@ -16,6 +20,7 @@ export class AuthGateway {
   constructor(private readonly appConfig: AppConfig) {}
 
   async signUp({
+    internalId,
     email,
     password,
   }: AuthGateway.SignUpParams): Promise<AuthGateway.SignUpResult> {
@@ -23,7 +28,10 @@ export class AuthGateway {
       ClientId: this.appConfig.auth.cognito.clientId,
       Username: email,
       Password: password,
-      UserAttributes: [{ Name: "email", Value: email }],
+      UserAttributes: [
+        { Name: "custom:internalId", Value: internalId },
+        { Name: "email", Value: email },
+      ],
       SecretHash: this.getSecretHash(email),
     });
 
@@ -53,7 +61,7 @@ export class AuthGateway {
     const { AuthenticationResult: result } = await cognitoClient.send(command);
 
     if (!result?.AccessToken || !result?.RefreshToken) {
-      throw new Error(`Cannot sign up user: ${email}`);
+      throw new Error("Cannot sign in");
     }
 
     return {
@@ -62,7 +70,55 @@ export class AuthGateway {
     };
   }
 
+  async refreshToken({
+    refreshToken,
+  }: AuthGateway.RefreshTokenParams): Promise<AuthGateway.RefreshTokenResult> {
+    const command = new GetTokensFromRefreshTokenCommand({
+      ClientId: this.appConfig.auth.cognito.clientId,
+      ClientSecret: this.appConfig.auth.cognito.clientSecret,
+      RefreshToken: refreshToken,
+    });
+
+    const { AuthenticationResult: result } = await cognitoClient.send(command);
+
+    if (!result?.AccessToken || !result?.RefreshToken) {
+      throw new Error("Cannot refresh token");
+    }
+
+    return {
+      accessToken: result.AccessToken,
+      refreshToken: result.RefreshToken,
+    };
+  }
+
+  async forgotPassword({ email }: AuthGateway.ForgotPasswordParams) {
+    const command = new ForgotPasswordCommand({
+      ClientId: this.appConfig.auth.cognito.clientId,
+      Username: email,
+      SecretHash: this.getSecretHash(email),
+    });
+
+    await cognitoClient.send(command);
+  }
+
+  async resetPassword({
+    email,
+    code,
+    password,
+  }: AuthGateway.ResetPasswordParams) {
+    const command = new ConfirmForgotPasswordCommand({
+      ClientId: this.appConfig.auth.cognito.clientId,
+      Username: email,
+      ConfirmationCode: code,
+      Password: password,
+      SecretHash: this.getSecretHash(email),
+    });
+
+    await cognitoClient.send(command);
+  }
+
   async createUser({
+    internalId,
     userPoolId,
     email,
     firstName,
@@ -74,6 +130,7 @@ export class AuthGateway {
       Username: email,
       MessageAction: "SUPPRESS",
       UserAttributes: [
+        { Name: "custom:internalId", Value: internalId },
         { Name: "given_name", Value: firstName },
         { Name: "family_name", Value: lastName },
         { Name: "email", Value: email },
@@ -169,6 +226,7 @@ export class AuthGateway {
 
 export namespace AuthGateway {
   export type SignUpParams = {
+    internalId: string;
     email: string;
     password: string;
   };
@@ -187,7 +245,27 @@ export namespace AuthGateway {
     refreshToken: string;
   };
 
+  export type RefreshTokenParams = {
+    refreshToken: string;
+  };
+
+  export type RefreshTokenResult = {
+    accessToken: string;
+    refreshToken: string;
+  };
+
+  export type ForgotPasswordParams = {
+    email: string;
+  };
+
+  export type ResetPasswordParams = {
+    email: string;
+    code: string;
+    password: string;
+  };
+
   export type CreateUserParams = {
+    internalId: string;
     userPoolId: string;
     email: string;
     firstName: string;

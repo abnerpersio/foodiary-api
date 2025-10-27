@@ -10,7 +10,7 @@ import {
 import { Registry } from "@/kernel/di/registry";
 import { corsConfig } from "@/shared/config/cors";
 import type { Constructor } from "@/shared/types/constructor";
-import type { MiddyContext, MiddyEvent } from "@/shared/types/http";
+import type { JWTClaims, MiddyContext, MiddyEvent } from "@/shared/types/http";
 import middy, { type MiddlewareObj } from "@middy/core";
 import httpCors from "@middy/http-cors";
 import httpJsonBodyParser from "@middy/http-json-body-parser";
@@ -73,18 +73,15 @@ export class HttpAdapter {
             pathParameters,
             requestContext,
           } = event;
-          const userId =
-            (requestContext.authorizer?.jwt?.claims?.username as
-              | string
-              | null) ?? null;
+          const jwtClaims = requestContext.authorizer?.jwt?.claims as JWTClaims;
 
           const result = await this.useCase.execute({
             query: queryStringParameters || {},
             params: pathParameters,
             body: body ?? {},
-            userId,
+            accountId: jwtClaims?.internalId ?? null,
             internal: context.internal,
-          } as any);
+          } as HttpUseCase.Request<"private", any>);
 
           return {
             statusCode: result.status,

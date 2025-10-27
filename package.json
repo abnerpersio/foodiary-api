@@ -2,7 +2,8 @@
   "scripts": {
     "build": "node esbuild.config.mjs",
     "clean": "rm -rf dist cdk.out",
-    "logs": "aws logs tail $LOG_GROUP_NAME --follow",
+    "logs": "aws logs tail /aws/lambda/foodiary-api-prod --follow",
+    "logs:lambda": "aws logs tail $LOG_GROUP_NAME --follow",
     "cdk": "cdk",
     "deploy": "bash deploy.sh",
     "deploy:gateway": "bash deploy.sh --gateway",

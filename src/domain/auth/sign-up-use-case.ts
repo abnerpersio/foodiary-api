@@ -34,9 +34,13 @@ export class SignUpUseCase implements HttpUseCase<"public"> {
     const alreadyInUse = await this.accountRepository.findByEmail(email);
     if (alreadyInUse) throw new EmailAlreadyInUse();
 
-    const { externalId } = await this.authGateway.signUp({ email, password });
-
-    const account = new Account({ externalId, email });
+    const account = new Account({ email });
+    const { externalId } = await this.authGateway.signUp({
+      internalId: account.id,
+      email,
+      password,
+    });
+    account.externalId = externalId;
     await this.accountRepository.create(account);
 
     const { accessToken, refreshToken } = await this.authGateway.signIn({
