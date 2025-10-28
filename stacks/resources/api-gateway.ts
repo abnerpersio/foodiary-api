@@ -21,7 +21,7 @@ type GatewayProps = {
 };
 
 export class ApiGatewayStack extends cdk.Stack {
-  private api: apigatewayv2.HttpApi;
+  api: apigatewayv2.HttpApi;
   private logGroup: cdk.aws_logs.LogGroup;
   private authorizer: HttpJwtAuthorizer;
 
@@ -57,6 +57,7 @@ export class ApiGatewayStack extends cdk.Stack {
         allowHeaders: ["Authorization", "Content-Type", "X-API-Key"],
       },
       defaultAuthorizer: undefined,
+      disableExecuteApiEndpoint: stackConfig.apiDomain.disableDefaultApiDomain,
     });
 
     for (const route of ROUTES) {

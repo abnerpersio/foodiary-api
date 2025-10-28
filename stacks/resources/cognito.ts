@@ -46,6 +46,9 @@ export class CognitoStack extends cdk.Stack {
       customAttributes: {
         internalId: new cognito.StringAttribute({ mutable: true }),
       },
+      email: stackConfig.cognito.customEmailProvider?.sesVerifiedDomain
+        ? cognito.UserPoolEmail.withSES(stackConfig.cognito.customEmailProvider)
+        : undefined,
     });
 
     const googleProvider = new cognito.UserPoolIdentityProviderGoogle(
@@ -113,27 +116,45 @@ export class CognitoStack extends cdk.Stack {
 
     this.createPreSignUpTrigger();
     this.createPreTokenTrigger();
+    this.createCustomMessageTrigger();
   }
 
   private createPreSignUpTrigger() {
-    const { cognito: cognitoConfig } = stackConfig;
+    const config = stackConfig.cognito.triggers.find(
+      (trigger) => trigger.type === "pre-sign-up"
+    );
 
-    if (cognitoConfig.preSignUpFnPath && cognitoConfig.preSignUpEnabled) {
+    if (config?.fnPath) {
       this.userPool.addTrigger(
         cognito.UserPoolOperation.PRE_SIGN_UP,
-        this.createLambda(stackConfig.cognito.preSignUpFnPath!, "pre-sign-up")
+        this.createLambda(config.fnPath, "pre-sign-up")
       );
     }
   }
 
   private createPreTokenTrigger() {
-    const { cognito: cognitoConfig } = stackConfig;
+    const config = stackConfig.cognito.triggers.find(
+      (trigger) => trigger.type === "pre-token"
+    );
 
-    if (cognitoConfig.preTokenFnPath && cognitoConfig.preTokenEnabled) {
+    if (config?.fnPath) {
       this.userPool.addTrigger(
         cognito.UserPoolOperation.PRE_TOKEN_GENERATION_CONFIG,
-        this.createLambda(stackConfig.cognito.preTokenFnPath!, "pre-token"),
+        this.createLambda(config.fnPath, "pre-token"),
         cognito.LambdaVersion.V2_0
+      );
+    }
+  }
+
+  private createCustomMessageTrigger() {
+    const config = stackConfig.cognito.triggers.find(
+      (trigger) => trigger.type === "custom-message"
+    );
+
+    if (config?.fnPath) {
+      this.userPool.addTrigger(
+        cognito.UserPoolOperation.CUSTOM_MESSAGE,
+        this.createLambda(config.fnPath, "custom-message")
       );
     }
   }

@@ -5,6 +5,7 @@ import * as awsCognito from "aws-cdk-lib/aws-cognito";
 import * as iam from "aws-cdk-lib/aws-iam";
 import type { Construct } from "constructs";
 import { stackConfig } from "./config";
+import { ApiCustomDomainStack } from "./resources/api-custom-domain";
 import { ApiGatewayStack } from "./resources/api-gateway";
 import { CognitoStack } from "./resources/cognito";
 import { DynamoDBStack } from "./resources/dynamodb";
@@ -14,39 +15,51 @@ export class MainStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const s3 = new S3Stack(this, "S3Stack");
-    const dynamo = new DynamoDBStack(this, "DynamoStack");
+    const s3Stack = new S3Stack(this, "S3Stack");
+    const dynamoStack = new DynamoDBStack(this, "DynamoStack");
 
     let environment = {
       ...stackConfig.baseEnvironment,
-      MAIN_TABLE_NAME: dynamo.table.tableName,
+      MAIN_TABLE_NAME: dynamoStack.table.tableName,
       NODE_ENV: stackConfig.environment,
-      STORAGE_BUCKET_NAME: s3.bucket.bucketName,
+      STORAGE_BUCKET_NAME: s3Stack.bucket.bucketName,
     } as Record<string, string>;
 
-    const cognito = new CognitoStack(this, "CognitoStack", { environment });
+    const cognitoStack = new CognitoStack(this, "CognitoStack", {
+      environment,
+    });
 
     environment = {
       ...environment,
-      COGNITO_CLIENT_ID: cognito.userPoolClient.userPoolClientId,
+      COGNITO_CLIENT_ID: cognitoStack.userPoolClient.userPoolClientId,
       COGNITO_CLIENT_SECRET:
-        cognito.userPoolClient.userPoolClientSecret.unsafeUnwrap(),
-      COGNITO_POOL_ID: cognito.userPool.userPoolId,
-      COGNITO_POOL_DOMAIN: cognito.userPoolDomain.domainName,
+        cognitoStack.userPoolClient.userPoolClientSecret.unsafeUnwrap(),
+      COGNITO_POOL_ID: cognitoStack.userPool.userPoolId,
+      COGNITO_POOL_DOMAIN: cognitoStack.userPoolDomain.domainName,
     };
 
     const role = this.createLambdaRole({
-      table: dynamo.table,
-      userPool: cognito.userPool,
-      bucket: s3.bucket,
+      table: dynamoStack.table,
+      userPool: cognitoStack.userPool,
+      bucket: s3Stack.bucket,
     });
 
-    new ApiGatewayStack(this, "api-gateway-stack", {
+    const apiStack = new ApiGatewayStack(this, "api-gateway-stack", {
       environment,
-      userPool: cognito.userPool,
-      userPoolClient: cognito.userPoolClient,
+      userPool: cognitoStack.userPool,
+      userPoolClient: cognitoStack.userPoolClient,
       role,
     });
+
+    const hasCustomDomain =
+      !!stackConfig.apiDomain?.name &&
+      !!stackConfig.apiDomain?.hostedZoneId &&
+      !!stackConfig.apiDomain?.hostedZoneName;
+    if (hasCustomDomain) {
+      new ApiCustomDomainStack(this, "ApiCustomDomainStack", {
+        api: apiStack.api,
+      });
+    }
   }
 
   private createLambdaRole({

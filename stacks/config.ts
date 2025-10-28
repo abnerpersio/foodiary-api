@@ -11,6 +11,12 @@ const projectNameWithEnv = `${projectName}-${environment}`;
 namespace StackConfig {
   export type Config = {
     stackName: string;
+    apiDomain: {
+      name: string;
+      hostedZoneName: string;
+      hostedZoneId: string;
+      disableDefaultApiDomain: boolean;
+    };
     environment: string;
     projectName: string;
     lambda: {
@@ -31,10 +37,16 @@ namespace StackConfig {
       userPoolName: string;
       userPoolDomainName: string;
       oauthBaseCallbacks: string[];
-      preSignUpEnabled: boolean;
-      preSignUpFnPath?: string;
-      preTokenEnabled: boolean;
-      preTokenFnPath?: string;
+      triggers: {
+        type: "pre-sign-up" | "pre-token" | "custom-message";
+        fnPath: string;
+      }[];
+      customEmailProvider?: {
+        fromEmail: string;
+        fromName: string;
+        sesRegion: string;
+        sesVerifiedDomain: string;
+      };
     };
     dynamo: {
       tableName: string;
@@ -47,6 +59,12 @@ namespace StackConfig {
 
 export const stackConfig = {
   stackName: `${projectNameWithEnv}-stack`,
+  apiDomain: {
+    name: process.env.API_DOMAIN_NAME,
+    hostedZoneId: process.env.ROUTE53_HOSTED_ZONE_ID,
+    hostedZoneName: process.env.ROUTE53_HOSTED_ZONE_NAME,
+    disableDefaultApiDomain: process.env.DISABLE_DEFAULT_API_DOMAIN === "true",
+  },
   environment,
   projectName: projectNameWithEnv,
   lambda: {
@@ -67,10 +85,27 @@ export const stackConfig = {
     userPoolName: `${projectNameWithEnv}-pool`,
     userPoolDomainName: projectName,
     oauthBaseCallbacks: ["http://localhost:5173"],
-    preSignUpEnabled: true,
-    preSignUpFnPath: "auth/cognito/pre-sign-up-trigger",
-    preTokenEnabled: true,
-    preTokenFnPath: "auth/cognito/pre-token-trigger",
+    triggers: [
+      {
+        type: "pre-sign-up",
+        fnPath: "auth/cognito/pre-sign-up-trigger",
+      },
+      {
+        type: "pre-token",
+        fnPath: "auth/cognito/pre-token-trigger",
+      },
+      {
+        type: "custom-message",
+        fnPath: "auth/cognito/custom-message-trigger",
+      },
+    ],
+    customEmailProvider: {
+      fromEmail: process.env.COGNITO_EMAIL_FROM,
+      fromName: process.env.COGNITO_EMAIL_FROM_NAME,
+      replyTo: process.env.COGNITO_EMAIL_REPLY_TO,
+      sesRegion: process.env.SES_REGION,
+      sesVerifiedDomain: process.env.SES_VERIFIED_DOMAIN,
+    },
   },
   dynamo: {
     tableName: `${projectNameWithEnv}-MainTable`,
@@ -85,5 +120,8 @@ export const stackConfig = {
     SENTRY_DSN: process.env.SENTRY_DSN || "",
     SENTRY_ENV: process.env.SENTRY_ENV || "",
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || "*",
+    API_DOMAIN_NAME: process.env.API_DOMAIN_NAME || "",
+    SES_REGION: process.env.SES_REGION || "",
+    SES_VERIFIED_DOMAIN: process.env.SES_VERIFIED_DOMAIN || "",
   },
-} satisfies StackConfig.Config;
+} as StackConfig.Config;
