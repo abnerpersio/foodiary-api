@@ -1,5 +1,5 @@
 import { type HttpUseCase } from "@/application/contracts/use-case";
-import { InvalidResetPassword } from "@/infra/errors/invalid-reset-password";
+import { InvalidResetPassword } from "@/application/errors/invalid-reset-password";
 import { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
 import z from "zod";

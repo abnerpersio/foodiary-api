@@ -1,4 +1,7 @@
-import { signUpSchema, SignUpUseCase } from "@/domain/auth/sign-up-use-case";
+import {
+  signUpSchema,
+  SignUpUseCase,
+} from "@/application/usecases/auth/sign-up-use-case";
 import { HttpAdapter } from "@/infra/adapters/http";
 import { validator } from "@/infra/middlewares/validator";
 

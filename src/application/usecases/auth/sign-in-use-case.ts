@@ -1,6 +1,6 @@
 import { type HttpUseCase } from "@/application/contracts/use-case";
-import { AppError } from "@/infra/errors/app-error";
-import { InvalidCredentials } from "@/infra/errors/invalid-credentials";
+import { AppError } from "@/application/errors/app-error";
+import { InvalidCredentials } from "@/application/errors/invalid-credentials";
 import { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
 import z from "zod";

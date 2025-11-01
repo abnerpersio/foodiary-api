@@ -2,6 +2,7 @@ import { Injectable } from "@/kernel/decorators/injectable";
 import { AppConfig } from "@/shared/config/app-config";
 import {
   AdminCreateUserCommand,
+  AdminDeleteUserCommand,
   AdminLinkProviderForUserCommand,
   ConfirmForgotPasswordCommand,
   ForgotPasswordCommand,
@@ -112,6 +113,15 @@ export class AuthGateway {
       ConfirmationCode: code,
       Password: password,
       SecretHash: this.getSecretHash(email),
+    });
+
+    await cognitoClient.send(command);
+  }
+
+  async deleteUser({ externalId }: AuthGateway.DeleteUserParams) {
+    const command = new AdminDeleteUserCommand({
+      UserPoolId: this.appConfig.auth.cognito.poolId,
+      Username: externalId,
     });
 
     await cognitoClient.send(command);
@@ -262,6 +272,10 @@ export namespace AuthGateway {
     email: string;
     code: string;
     password: string;
+  };
+
+  export type DeleteUserParams = {
+    externalId: string;
   };
 
   export type CreateUserParams = {

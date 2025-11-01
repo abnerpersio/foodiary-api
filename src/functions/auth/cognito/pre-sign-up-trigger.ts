@@ -43,6 +43,7 @@ const createUser = async ({
   return result.user;
 };
 
+// TODO: implement route to validate if user has profile and create profile after signup
 export const handler = async (event: PreSignUpTriggerEvent) => {
   event.response.autoConfirmUser = true;
   event.response.autoVerifyEmail = true;

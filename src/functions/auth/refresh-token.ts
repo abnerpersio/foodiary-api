@@ -1,7 +1,7 @@
 import {
   refreshTokenSchema,
   RefreshTokenUseCase,
-} from "@/domain/auth/refresh-token-use-case";
+} from "@/application/usecases/auth/refresh-token-use-case";
 import { HttpAdapter } from "@/infra/adapters/http";
 import { validator } from "@/infra/middlewares/validator";
 

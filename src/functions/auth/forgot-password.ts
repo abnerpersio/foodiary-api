@@ -1,7 +1,7 @@
 import {
   forgotPasswordSchema,
   ForgotPasswordUseCase,
-} from "@/domain/auth/forgot-password-use-case";
+} from "@/application/usecases/auth/forgot-password-use-case";
 import { HttpAdapter } from "@/infra/adapters/http";
 import { validator } from "@/infra/middlewares/validator";
 

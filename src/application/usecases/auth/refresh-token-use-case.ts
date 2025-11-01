@@ -1,6 +1,6 @@
 import { type HttpUseCase } from "@/application/contracts/use-case";
-import { AppError } from "@/infra/errors/app-error";
-import { InvalidRefreshToken } from "@/infra/errors/invalid-refresh-token";
+import { AppError } from "@/application/errors/app-error";
+import { InvalidRefreshToken } from "@/application/errors/invalid-refresh-token";
 import { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
 import z from "zod";

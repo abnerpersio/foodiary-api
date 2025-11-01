@@ -32,14 +32,16 @@ export class AccountRepository {
     return AccountItem.toEntity(account);
   }
 
-  async create(account: Account) {
+  getPutCommandInput(account: Account) {
     const item = AccountItem.fromEntity(account);
 
-    const command = new PutCommand({
+    return {
       TableName: this.appConfig.db.dynamodb.mainTable,
       Item: item.toItem(),
-    });
+    };
+  }
 
-    await dynamoClient.send(command);
+  async create(account: Account) {
+    await dynamoClient.send(new PutCommand(this.getPutCommandInput(account)));
   }
 }

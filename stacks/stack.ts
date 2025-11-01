@@ -97,6 +97,7 @@ export class MainStack extends cdk.Stack {
           "cognito-idp:AdminGetUser",
           "cognito-idp:ListUsers",
           "cognito-idp:AdminCreateUser",
+          "cognito-idp:AdminDeleteUser",
           "cognito-idp:AdminLinkProviderForUser",
         ],
         resources: [userPool.userPoolArn],
