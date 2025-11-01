@@ -12,13 +12,11 @@ export namespace HttpUseCase {
   export type BaseRequest<
     TBody extends DefaultData = undefined,
     TParams = Record<string, string>,
-    TQueryParams = Record<string, string>,
-    TInternal = Record<string, unknown>
+    TQueryParams = Record<string, string>
   > = {
     body: TBody;
     params: TParams;
     query: TQueryParams;
-    internal?: TInternal;
   };
 
   type PublicRequest<
@@ -46,10 +44,10 @@ export namespace HttpUseCase {
     ? PublicRequest<TBody, TParams, TQueryParams>
     : PrivateRequest<TBody, TParams, TQueryParams>;
 
-  export type Response =
+  export type Response<TData = Record<string, any> | Record<string, any>[]> =
     | {
         status: number;
-        data?: Record<string, any> | Record<string, any>[];
+        data?: TData;
         message?: never;
       }
     | {

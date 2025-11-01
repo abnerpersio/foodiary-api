@@ -116,7 +116,7 @@ export class ApiGatewayStack extends cdk.Stack {
       path: routePath,
       methods: [method],
       integration,
-      authorizer: route.authorizer === "jwt" ? this.authorizer : undefined,
+      authorizer: route.private ? this.authorizer : undefined,
     });
   }
 

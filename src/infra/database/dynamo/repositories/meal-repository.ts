@@ -1,16 +1,16 @@
-import type { Goal } from "@/application/entities/goal";
+import { Meal } from "@/application/entities/meal";
 import { dynamoClient } from "@/infra/clients/dynamo";
 import { Injectable } from "@/kernel/decorators/injectable";
 import { AppConfig } from "@/shared/config/app-config";
 import { PutCommand, PutCommandInput } from "@aws-sdk/lib-dynamodb";
-import { GoalItem } from "../items/goal-item";
+import { MealItem } from "../items/meal-item";
 
 @Injectable()
-export class GoalRepository {
+export class MealRepository {
   constructor(private readonly appConfig: AppConfig) {}
 
-  getPutCommandInput(goal: Goal): PutCommandInput {
-    const item = GoalItem.fromEntity(goal);
+  getPutCommandInput(meal: Meal): PutCommandInput {
+    const item = MealItem.fromEntity(meal);
 
     return {
       TableName: this.appConfig.db.dynamodb.mainTable,
@@ -18,7 +18,7 @@ export class GoalRepository {
     };
   }
 
-  async create(goal: Goal) {
-    await dynamoClient.send(new PutCommand(this.getPutCommandInput(goal)));
+  async create(meal: Meal) {
+    await dynamoClient.send(new PutCommand(this.getPutCommandInput(meal)));
   }
 }

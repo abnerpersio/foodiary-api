@@ -13,6 +13,7 @@ export class S3Stack extends cdk.Stack {
 
     this.bucket = new s3.Bucket(this, "StorageBucket", {
       bucketName: stackConfig.storage.bucketName,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
       lifecycleRules: [
         {
           abortIncompleteMultipartUploadAfter: cdk.Duration.days(1),

@@ -5,6 +5,7 @@ import { Env } from "./env";
 export class AppConfig {
   readonly auth: AppConfig.Auth;
   readonly db: AppConfig.Database;
+  readonly storage: AppConfig.Storage;
 
   constructor() {
     this.auth = {
@@ -19,6 +20,10 @@ export class AppConfig {
       dynamodb: {
         mainTable: Env.mainTableName,
       },
+    };
+
+    this.storage = {
+      mealsBucket: Env.mealsBucketName,
     };
   }
 }
@@ -36,5 +41,9 @@ export namespace AppConfig {
     dynamodb: {
       mainTable: string;
     };
+  };
+
+  export type Storage = {
+    mealsBucket: string;
   };
 }
