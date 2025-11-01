@@ -43,21 +43,27 @@ export const ROUTES: Route[] = [
     private: true,
   },
   {
-    fnPath: "meal/create-meal",
+    fnPath: "meals/create-meal",
     method: "POST",
     route: "/meals",
     private: true,
   },
   {
-    fnPath: "meal/list-meals-by-date",
+    fnPath: "meals/list-meals-by-date",
     method: "GET",
     route: "/meals",
     private: true,
   },
   {
-    fnPath: "meal/get-meal",
+    fnPath: "meals/get-meal",
     method: "GET",
     route: "/meals/:mealId",
+    private: true,
+  },
+  {
+    fnPath: "profiles/update-profile",
+    method: "PUT",
+    route: "/profile",
     private: true,
   },
 ];

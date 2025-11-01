@@ -7,8 +7,9 @@ export class Profile {
   gender: Profile.Gender;
   height: number;
   weight: number;
-  activityLevel: Profile.ActivityLevel;
-  goal: Profile.Goal;
+
+  readonly activityLevel: Profile.ActivityLevel;
+  readonly goal: Profile.Goal;
 
   constructor(attr: Profile.Attributes) {
     this.accountId = attr.accountId;

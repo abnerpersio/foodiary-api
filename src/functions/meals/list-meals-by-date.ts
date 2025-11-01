@@ -3,7 +3,7 @@ import "reflect-metadata";
 import {
   listMealsByDateSchema,
   ListMealsByDateUseCase,
-} from "@/application/usecases/meal/list-meals-by-date-use-case";
+} from "@/application/usecases/meals/list-meals-by-date-use-case";
 import { HttpAdapter } from "@/infra/adapters/http";
 import { validator } from "@/infra/middlewares/validator";
 

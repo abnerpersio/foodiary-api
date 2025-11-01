@@ -3,7 +3,7 @@ import "reflect-metadata";
 import {
   createMealSchema,
   CreateMealUseCase,
-} from "@/application/usecases/meal/create-meal-use-case";
+} from "@/application/usecases/meals/create-meal-use-case";
 import { HttpAdapter } from "@/infra/adapters/http";
 import { validator } from "@/infra/middlewares/validator";
 
