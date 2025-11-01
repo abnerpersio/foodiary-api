@@ -30,9 +30,7 @@ export class AccountItem {
 
   static toEntity(accountItem: AccountItem.ItemType) {
     return new Account({
-      id: accountItem.id,
-      email: accountItem.email,
-      externalId: accountItem.externalId,
+      ...accountItem,
       createdAt: new Date(accountItem.createdAt),
     });
   }

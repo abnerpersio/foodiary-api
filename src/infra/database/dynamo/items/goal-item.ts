@@ -29,11 +29,7 @@ export class GoalItem {
 
   static toEntity(profileItem: GoalItem.ItemType) {
     return new Goal({
-      accountId: profileItem.accountId,
-      calories: profileItem.calories,
-      proteins: profileItem.proteins,
-      carbohydrates: profileItem.carbohydrates,
-      fats: profileItem.fats,
+      ...profileItem,
       createdAt: new Date(profileItem.createdAt),
     });
   }

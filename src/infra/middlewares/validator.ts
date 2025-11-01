@@ -8,13 +8,19 @@ export function validator(schema: z.ZodSchema): MiddlewareObj<MiddyEvent> {
     before: async (request) => {
       const { body, queryStringParameters, pathParameters } = request.event;
 
-      const { error } = schema.safeParse({
+      const { data, error } = schema.safeParse({
         query: queryStringParameters,
         body: body ?? {},
         params: pathParameters,
       });
 
-      if (!error?.issues) return;
+      if (!error?.issues) {
+        const { body, query, params } = data as any;
+        if (body) request.event.body = body;
+        if (query) request.event.queryStringParameters = query;
+        if (params) request.event.pathParameters = params;
+        return;
+      }
 
       const errors = error.issues.map((issue) => ({
         field: issue.path.join("."),

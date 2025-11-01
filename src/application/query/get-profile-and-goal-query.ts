@@ -80,11 +80,11 @@ export namespace GetProfileAndGoalQuery {
 
   export type ProfileItemType = Pick<
     ProfileItem.ItemType,
-    "type" | "name" | "birthDate" | "gender" | "height" | "weight"
+    "PK" | "SK" | "type" | "name" | "birthDate" | "gender" | "height" | "weight"
   >;
   export type GoalItemType = Pick<
     GoalItem.ItemType,
-    "type" | "calories" | "proteins" | "carbohydrates" | "fats"
+    "PK" | "SK" | "type" | "calories" | "proteins" | "carbohydrates" | "fats"
   >;
 
   export type Output = {

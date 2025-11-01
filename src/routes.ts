@@ -45,7 +45,13 @@ export const ROUTES: Route[] = [
   {
     fnPath: "meal/create-meal",
     method: "POST",
-    route: "/meal",
+    route: "/meals",
+    private: true,
+  },
+  {
+    fnPath: "meal/list-meals-by-date",
+    method: "GET",
+    route: "/meals",
     private: true,
   },
 ];

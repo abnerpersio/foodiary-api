@@ -30,13 +30,7 @@ export class ProfileItem {
 
   static toEntity(profileItem: ProfileItem.ItemType) {
     return new Profile({
-      accountId: profileItem.accountId,
-      name: profileItem.name,
-      activityLevel: profileItem.activityLevel,
-      goal: profileItem.goal,
-      gender: profileItem.gender,
-      height: profileItem.height,
-      weight: profileItem.weight,
+      ...profileItem,
       birthDate: new Date(profileItem.birthDate),
       createdAt: new Date(profileItem.createdAt),
     });

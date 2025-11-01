@@ -20,6 +20,11 @@ export const createMealSchema = z.object({
 
 export namespace CreateMealUseCase {
   export type Body = z.infer<typeof createMealSchema>["body"];
+
+  export type Output = {
+    mealId: string;
+    uploadSignature: string;
+  };
 }
 
 @Injectable()
@@ -69,11 +74,4 @@ export class CreateMealUseCase implements HttpUseCase<"private"> {
       },
     };
   }
-}
-
-export namespace CreateMealUseCase {
-  export type Output = {
-    mealId: string;
-    uploadSignature: string;
-  };
 }
