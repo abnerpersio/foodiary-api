@@ -54,4 +54,10 @@ export const ROUTES: Route[] = [
     route: "/meals",
     private: true,
   },
+  {
+    fnPath: "meal/get-meal",
+    method: "GET",
+    route: "/meals/:mealId",
+    private: true,
+  },
 ];

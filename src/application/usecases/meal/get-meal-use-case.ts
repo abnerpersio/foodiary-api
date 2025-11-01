@@ -3,16 +3,11 @@ import { Meal } from "@/application/entities/meal";
 import { ResourceNotFound } from "@/application/errors/resource-not-found";
 import { MealRepository } from "@/infra/database/dynamo/repositories/meal-repository";
 import { Injectable } from "@/kernel/decorators/injectable";
-import z from "zod";
-
-export const listMealsByDateSchema = z.object({
-  params: z.object({
-    mealId: z.string(),
-  }),
-});
 
 export namespace GetMealUseCase {
-  export type Params = z.infer<typeof listMealsByDateSchema>["params"];
+  export type Params = {
+    mealId: string;
+  };
 
   export type Output = {
     id: string;
@@ -22,7 +17,7 @@ export namespace GetMealUseCase {
     name: string;
     icon: string;
     foods: Meal.Food[];
-    createdAt: Date;
+    createdAt: string;
   };
 }
 
@@ -40,7 +35,7 @@ export class GetMealUseCase implements HttpUseCase<"private"> {
     if (!meal) throw new ResourceNotFound("Meal not found");
 
     return {
-      status: 201,
+      status: 200,
       data: {
         id: meal.id,
         status: meal.status,
@@ -49,7 +44,7 @@ export class GetMealUseCase implements HttpUseCase<"private"> {
         foods: meal.foods,
         icon: meal.icon,
         name: meal.name,
-        createdAt: meal.createdAt,
+        createdAt: meal.createdAt.toISOString(),
       },
     };
   }

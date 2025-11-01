@@ -29,7 +29,7 @@ export class ListMealsByDateUseCase implements HttpUseCase<"private"> {
     const date = request.query.date;
 
     return {
-      status: 201,
+      status: 200,
       data: await this.listMealsByDateQuery.execute({ accountId, date }),
     };
   }
