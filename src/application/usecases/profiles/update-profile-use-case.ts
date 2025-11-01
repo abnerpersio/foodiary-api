@@ -42,7 +42,3 @@ export class UpdateProfileUseCase implements HttpUseCase<"private"> {
     return { status: 204 };
   }
 }
-
-export namespace UpdateProfileUseCase {
-  export type Input = {};
-}

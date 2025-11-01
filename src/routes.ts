@@ -66,4 +66,10 @@ export const ROUTES: Route[] = [
     route: "/profile",
     private: true,
   },
+  {
+    fnPath: "goals/update-goal",
+    method: "PUT",
+    route: "/goals",
+    private: true,
+  },
 ];
