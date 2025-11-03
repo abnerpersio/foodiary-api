@@ -1,5 +1,4 @@
 import { ROUTES, type Route } from "@/routes";
-import { toKebabCase } from "@/shared/utils/lambda";
 import * as cdk from "aws-cdk-lib";
 import * as apigatewayv2 from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpJwtAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
@@ -9,7 +8,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as logs from "aws-cdk-lib/aws-logs";
 import type { Construct } from "constructs";
 import { stackConfig } from "../config";
-import { createFunctionAsset } from "../utils";
+import { createFunctionAsset, toKebabCase } from "../utils";
 
 type Env = Record<string, string>;
 
@@ -104,18 +103,10 @@ export class ApiGatewayStack extends cdk.Stack {
       role: this.gatewayProps.role,
     });
 
-    const integration = new HttpLambdaIntegration(
-      `${name}-integration`,
-      lambdaFn
-    );
-
-    const routePath = route.route;
-    const method = this.getHttpMethod(route.method);
-
     this.api.addRoutes({
-      path: routePath,
-      methods: [method],
-      integration,
+      path: route.route,
+      methods: [this.getHttpMethod(route.method)],
+      integration: new HttpLambdaIntegration(`${name}-integration`, lambdaFn),
       authorizer: route.private ? this.authorizer : undefined,
     });
   }

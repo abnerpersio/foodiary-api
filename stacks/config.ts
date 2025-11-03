@@ -24,7 +24,6 @@ namespace StackConfig {
     };
     apiGateway: {
       apiName: string;
-      apiKeyRequired: boolean;
     };
     storage: {
       bucketName: string;
@@ -72,7 +71,6 @@ export const stackConfig = {
   },
   apiGateway: {
     apiName: projectNameWithEnv,
-    apiKeyRequired: true,
   },
   storage: {
     bucketName: `${projectNameWithEnv}-storage`,
