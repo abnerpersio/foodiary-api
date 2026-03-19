@@ -11,11 +11,16 @@ const projectNameWithEnv = `${projectName}-${environment}`;
 namespace StackConfig {
   export type Config = {
     stackName: string;
-    apiDomain: {
-      name: string;
+    route53: {
       hostedZoneName: string;
       hostedZoneId: string;
+    };
+    apiDomain: {
+      name: string;
       disableDefaultApiDomain: boolean;
+    };
+    cdn: {
+      domainName: string | undefined;
     };
     environment: string;
     projectName: string;
@@ -58,11 +63,16 @@ namespace StackConfig {
 
 export const stackConfig = {
   stackName: `${projectNameWithEnv}-stack`,
-  apiDomain: {
-    name: process.env.API_DOMAIN_NAME,
+  route53: {
     hostedZoneId: process.env.ROUTE53_HOSTED_ZONE_ID,
     hostedZoneName: process.env.ROUTE53_HOSTED_ZONE_NAME,
+  },
+  apiDomain: {
+    name: process.env.API_DOMAIN_NAME,
     disableDefaultApiDomain: process.env.DISABLE_DEFAULT_API_DOMAIN === "true",
+  },
+  cdn: {
+    domainName: process.env.CDN_DOMAIN_NAME,
   },
   environment,
   projectName: projectNameWithEnv,

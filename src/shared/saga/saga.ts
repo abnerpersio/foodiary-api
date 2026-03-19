@@ -27,5 +27,3 @@ export class Saga {
     }
   }
 }
-
-export namespace Saga {}

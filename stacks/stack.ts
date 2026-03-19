@@ -53,8 +53,8 @@ export class MainStack extends cdk.Stack {
 
     const hasCustomDomain =
       !!stackConfig.apiDomain?.name &&
-      !!stackConfig.apiDomain?.hostedZoneId &&
-      !!stackConfig.apiDomain?.hostedZoneName;
+      !!stackConfig.route53?.hostedZoneId &&
+      !!stackConfig.route53?.hostedZoneName;
     if (hasCustomDomain) {
       new ApiCustomDomainStack(this, "ApiCustomDomainStack", {
         api: apiStack.api,
@@ -87,7 +87,7 @@ export class MainStack extends cdk.Stack {
           "dynamodb:Query",
         ],
         resources: [table.tableArn, `${table.tableArn}/index/*`],
-      })
+      }),
     );
 
     role.addToPolicy(
@@ -101,7 +101,7 @@ export class MainStack extends cdk.Stack {
           "cognito-idp:AdminLinkProviderForUser",
         ],
         resources: [userPool.userPoolArn],
-      })
+      }),
     );
 
     role.addToPolicy(
@@ -109,13 +109,13 @@ export class MainStack extends cdk.Stack {
         effect: iam.Effect.ALLOW,
         actions: ["s3:GetObject", "s3:PutObject"],
         resources: [bucket.bucketArn, `${bucket.bucketArn}/*`],
-      })
+      }),
     );
 
     role.addManagedPolicy(
       cdk.aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
-        "service-role/AWSLambdaBasicExecutionRole"
-      )
+        "service-role/AWSLambdaBasicExecutionRole",
+      ),
     );
 
     return role;

@@ -14,7 +14,7 @@ export class ApiCustomDomainStack extends cdk.Stack {
   constructor(
     scope: Construct,
     id: string,
-    apiCustomDomainProps: ApiCustomDomainProps
+    apiCustomDomainProps: ApiCustomDomainProps,
   ) {
     super(scope, id, {
       stackName: stackConfig.stackName.concat("-apigateway-customdomain"),
@@ -24,9 +24,9 @@ export class ApiCustomDomainStack extends cdk.Stack {
       this,
       "CustomDomainHostedZone",
       {
-        hostedZoneId: stackConfig.apiDomain.hostedZoneId,
-        zoneName: stackConfig.apiDomain.hostedZoneName,
-      }
+        hostedZoneId: stackConfig.route53.hostedZoneId,
+        zoneName: stackConfig.route53.hostedZoneName,
+      },
     );
 
     const certificate = new acm.Certificate(this, "CustomDomainCertificate", {
@@ -40,7 +40,7 @@ export class ApiCustomDomainStack extends cdk.Stack {
       {
         certificate,
         domainName: stackConfig.apiDomain.name,
-      }
+      },
     );
 
     new apigatewayv2.ApiMapping(this, "ApiMapping", {
@@ -50,7 +50,7 @@ export class ApiCustomDomainStack extends cdk.Stack {
 
     const aliasTarget = new targets.ApiGatewayv2DomainProperties(
       domainName.regionalDomainName,
-      domainName.regionalHostedZoneId
+      domainName.regionalHostedZoneId,
     );
     new route53.RecordSet(this, "ApiCustomDomainDNSRecord", {
       zone: hostedZone,

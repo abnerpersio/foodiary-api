@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "node esbuild.config.mjs",
+    "build": "node esbuild.mjs",
     "clean": "rm -rf dist cdk.out",
     "dev:email": "email dev --dir src/infra/emails/templates",
     "logs": "aws logs tail /aws/lambda/foodiary-api-prod --follow",
