@@ -31,13 +31,14 @@ export class S3Stack extends cdk.Stack {
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
         compress: true,
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
       },
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
       certificate: this.getCertificate(),
     });
+    cdk.Tags.of(this.cdn).add("Name", stackConfig.stackName.concat("-cdn"));
   }
 
   private getCertificate() {
