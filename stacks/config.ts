@@ -32,6 +32,7 @@ namespace StackConfig {
     };
     storage: {
       bucketName: string;
+      mealsFileUpdloadedFnPath: string;
     };
     google: {
       clientId: string;
@@ -84,6 +85,7 @@ export const stackConfig = {
   },
   storage: {
     bucketName: `${projectNameWithEnv}-storage`,
+    mealsFileUpdloadedFnPath: "meals/on-meal-file-uploaded",
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID as string,

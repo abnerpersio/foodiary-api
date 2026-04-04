@@ -2,7 +2,9 @@ import { type HttpUseCase } from "@/application/contracts/use-case";
 import { Meal } from "@/application/entities/meal";
 import { ResourceNotFound } from "@/application/errors/resource-not-found";
 import { MealRepository } from "@/infra/database/dynamo/repositories/meal-repository";
+import { MealsFileStorageGateway } from "@/infra/gateways/meals-file-storage-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
+import { AppConfig } from "@/shared/config/app-config";
 
 export namespace GetMealUseCase {
   export type Params = {
@@ -13,7 +15,7 @@ export namespace GetMealUseCase {
     id: string;
     status: Meal.Status;
     inputType: Meal.InputType;
-    inputFileKey: string;
+    inputFileUrl: string;
     name: string;
     icon: string;
     foods: Meal.Food[];
@@ -23,10 +25,13 @@ export namespace GetMealUseCase {
 
 @Injectable()
 export class GetMealUseCase implements HttpUseCase<"private"> {
-  constructor(private readonly mealRepository: MealRepository) {}
+  constructor(
+    private readonly mealsFileStorageGateway: MealsFileStorageGateway,
+    private readonly mealRepository: MealRepository,
+  ) {}
 
   async execute(
-    request: HttpUseCase.Request<"private", undefined, GetMealUseCase.Params>
+    request: HttpUseCase.Request<"private", undefined, GetMealUseCase.Params>,
   ): Promise<HttpUseCase.Response<GetMealUseCase.Output>> {
     const { accountId } = request;
     const { mealId } = request.params;
@@ -40,7 +45,9 @@ export class GetMealUseCase implements HttpUseCase<"private"> {
         id: meal.id,
         status: meal.status,
         inputType: meal.inputType,
-        inputFileKey: meal.inputFileKey,
+        inputFileUrl: this.mealsFileStorageGateway.getFileURL(
+          meal.inputFileKey,
+        ),
         foods: meal.foods,
         icon: meal.icon,
         name: meal.name,

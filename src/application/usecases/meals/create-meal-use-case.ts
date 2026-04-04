@@ -31,11 +31,11 @@ export namespace CreateMealUseCase {
 export class CreateMealUseCase implements HttpUseCase<"private"> {
   constructor(
     private readonly mealRepository: MealRepository,
-    private readonly mealsFileStorageGateway: MealsFileStorageGateway
+    private readonly mealsFileStorageGateway: MealsFileStorageGateway,
   ) {}
 
   async execute(
-    request: HttpUseCase.Request<"private", CreateMealUseCase.Body>
+    request: HttpUseCase.Request<"private", CreateMealUseCase.Body>,
   ): Promise<HttpUseCase.Response<CreateMealUseCase.Output>> {
     const { accountId } = request;
     const { file } = request.body;
@@ -57,6 +57,7 @@ export class CreateMealUseCase implements HttpUseCase<"private"> {
     const [, { uploadSignature }] = await Promise.all([
       this.mealRepository.create(meal),
       this.mealsFileStorageGateway.createPOST({
+        accountId,
         mealId: meal.id,
         file: {
           key: inputFileKey,

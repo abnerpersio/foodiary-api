@@ -8,24 +8,25 @@ import { s3Client } from "../clients/s3";
 
 @Injectable()
 export class MealsFileStorageGateway {
-  constructor(private readonly config: AppConfig) {}
+  constructor(private readonly appConfig: AppConfig) {}
 
   static generateFileKey({
     accountId,
     inputType,
   }: MealsFileStorageGateway.GenerateFileKeyParams): string {
-    const extension = inputType === Meal.InputType.AUDIO ? "m4a" : "jepg";
+    const extension = inputType === Meal.InputType.AUDIO ? "m4a" : "jpeg";
     const filename = `${KSUID.randomSync().string}.${extension}`;
     return `${accountId}/${filename}`;
   }
 
   async createPOST({
     file,
+    accountId,
     mealId,
   }: MealsFileStorageGateway.CreatePostParams): Promise<MealsFileStorageGateway.CreatePostResult> {
-    const bucket = this.config.storage.mealsBucket;
+    const bucket = this.appConfig.storage.mealsBucket;
     const fileType =
-      file.inputType === Meal.InputType.AUDIO ? "audio/m4a" : "image/jepg";
+      file.inputType === Meal.InputType.AUDIO ? "audio/m4a" : "image/jpeg";
 
     const { url, fields } = await createPresignedPost(s3Client, {
       Bucket: bucket,
@@ -38,6 +39,7 @@ export class MealsFileStorageGateway {
         ["content-length-range", file.size, file.size],
       ],
       Fields: {
+        "x-amz-meta-accountid": accountId,
         "x-amz-meta-mealid": mealId,
       },
     });
@@ -49,10 +51,14 @@ export class MealsFileStorageGateway {
           ...fields,
           "Content-Type": fileType,
         },
-      })
+      }),
     ).toString("base64");
 
     return { uploadSignature };
+  }
+
+  getFileURL(fileKey: string) {
+    return `https://${this.appConfig.cdn.mealsCdnDomainName}/${fileKey}`;
   }
 }
 
@@ -68,6 +74,7 @@ export namespace MealsFileStorageGateway {
       key: string;
       size: number;
     };
+    accountId: string;
     mealId: string;
   };
 

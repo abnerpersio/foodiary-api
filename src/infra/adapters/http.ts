@@ -55,14 +55,14 @@ export class HttpAdapter {
               serializer: ({ body }) => JSON.stringify(body),
             },
           ],
-        })
+        }),
       )
       .use(
         httpCors({
           origins: corsConfig.origins,
           headers: corsConfig.headers,
           requestMethods: corsConfig.methods,
-        })
+        }),
       )
       .use(this.middlewares)
       .handler(async (event: MiddyEvent, context: MiddyContext) => {

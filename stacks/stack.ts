@@ -15,15 +15,21 @@ export class MainStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const s3Stack = new S3Stack(this, "S3Stack");
     const dynamoStack = new DynamoDBStack(this, "DynamoStack");
 
     let environment = {
       ...stackConfig.baseEnvironment,
       MAIN_TABLE_NAME: dynamoStack.table.tableName,
       NODE_ENV: stackConfig.environment,
-      STORAGE_BUCKET_NAME: s3Stack.bucket.bucketName,
     } as Record<string, string>;
+
+    const s3Stack = new S3Stack(this, "S3Stack", { environment });
+
+    environment = {
+      ...environment,
+      STORAGE_BUCKET_NAME: s3Stack.bucket.bucketName,
+      CDN_DOMAIN_NAME: s3Stack.cdnDomainName,
+    };
 
     const cognitoStack = new CognitoStack(this, "CognitoStack", {
       environment,
