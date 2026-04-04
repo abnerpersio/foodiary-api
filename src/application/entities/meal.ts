@@ -5,11 +5,12 @@ export class Meal {
   readonly accountId: string;
   readonly createdAt: Date;
 
+  readonly inputType: Meal.InputType;
+  readonly inputFileKey: string;
+
   icon: string;
   status: Meal.Status;
   attempts: number | undefined;
-  inputType: Meal.InputType;
-  inputFileKey: string;
   name: string;
 
   foods: Meal.Food[];

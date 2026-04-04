@@ -10,6 +10,7 @@ import { ApiGatewayStack } from "./resources/api-gateway";
 import { CognitoStack } from "./resources/cognito";
 import { DynamoDBStack } from "./resources/dynamodb";
 import { S3Stack } from "./resources/s3";
+import { SQSStack } from "./resources/sqs";
 
 export class MainStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -23,13 +24,20 @@ export class MainStack extends cdk.Stack {
       NODE_ENV: stackConfig.environment,
     } as Record<string, string>;
 
-    const s3Stack = new S3Stack(this, "S3Stack", { environment });
+    const s3Stack = new S3Stack(this, "S3Stack", {
+      tableArn: dynamoStack.table.tableArn,
+      environment,
+    });
 
     environment = {
       ...environment,
       STORAGE_BUCKET_NAME: s3Stack.bucket.bucketName,
       CDN_DOMAIN_NAME: s3Stack.cdnDomainName,
     };
+
+    const sqsStack = new SQSStack(this, "SQSStack", {
+      environment,
+    });
 
     const cognitoStack = new CognitoStack(this, "CognitoStack", {
       environment,

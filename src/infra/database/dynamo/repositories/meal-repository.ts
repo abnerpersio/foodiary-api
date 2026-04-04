@@ -2,7 +2,12 @@ import { Meal } from "@/application/entities/meal";
 import { dynamoClient } from "@/infra/clients/dynamo";
 import { Injectable } from "@/kernel/decorators/injectable";
 import { AppConfig } from "@/shared/config/app-config";
-import { GetCommand, PutCommand, PutCommandInput } from "@aws-sdk/lib-dynamodb";
+import {
+  GetCommand,
+  PutCommand,
+  PutCommandInput,
+  UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { MealItem } from "../items/meal-item";
 
 @Injectable()
@@ -26,6 +31,37 @@ export class MealRepository {
     if (!mealItem) return null;
 
     return MealItem.toEntity(mealItem as MealItem.ItemType);
+  }
+
+  async save(meal: Meal) {
+    const mealItem = MealItem.fromEntity(meal).toItem();
+    const updateFields = [
+      "icon",
+      "status",
+      "name",
+      "foods",
+      "attempts",
+    ] as (keyof MealItem.ItemType)[];
+
+    const command = new UpdateCommand({
+      TableName: this.appConfig.db.dynamodb.mainTable,
+      Key: {
+        PK: mealItem.PK,
+        SK: mealItem.SK,
+      },
+      UpdateExpression: `SET ${updateFields.map(
+        (field) => `#${field} = :${field}`,
+      )}`,
+      ExpressionAttributeNames: Object.fromEntries(
+        updateFields.map((field) => [`#${field}`, field]),
+      ),
+      ExpressionAttributeValues: Object.fromEntries(
+        updateFields.map((field) => [`:${field}`, mealItem[field]]),
+      ),
+      ReturnValues: "NONE",
+    });
+
+    await dynamoClient.send(command);
   }
 
   getPutCommandInput(meal: Meal): PutCommandInput {

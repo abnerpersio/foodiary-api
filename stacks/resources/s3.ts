@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as route53 from "aws-cdk-lib/aws-route53";
@@ -13,12 +14,15 @@ import { stackConfig } from "../config";
 
 type S3Props = {
   environment: Record<string, string>;
+  tableArn: string;
 };
 
 export class S3Stack extends cdk.Stack {
   public readonly bucket: s3.Bucket;
   public readonly cdn: cloudfront.Distribution;
   public readonly cdnDomainName: string;
+
+  private readonly role: iam.Role;
 
   constructor(
     scope: Construct,
@@ -62,6 +66,7 @@ export class S3Stack extends cdk.Stack {
       ? stackConfig.cdn.domainName!
       : this.cdn.domainName;
 
+    this.role = this.createRole();
     this.createTriggers();
   }
 
@@ -96,6 +101,7 @@ export class S3Stack extends cdk.Stack {
       runtime: stackConfig.lambda.runtime,
       handler,
       memorySize: 128,
+      role: this.role,
       timeout: cdk.Duration.seconds(30),
       code: lambda.Code.fromAsset(asset),
       logGroup,
@@ -106,6 +112,43 @@ export class S3Stack extends cdk.Stack {
         ENV_IGNORE_SETUP: "true",
       },
     });
+  }
+
+  private createRole() {
+    const role = new iam.Role(this, `${stackConfig.projectName}-lambda-role`, {
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+      description: `Role used by ${stackConfig.projectName} S3 Trigger Lambda functions`,
+    });
+
+    role.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+        ],
+        resources: [this.s3Props.tableArn, `${this.s3Props.tableArn}/index/*`],
+      }),
+    );
+
+    role.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:GetObject"],
+        resources: [this.bucket.bucketArn, `${this.bucket.bucketArn}/*`],
+      }),
+    );
+
+    role.addManagedPolicy(
+      cdk.aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
+        "service-role/AWSLambdaBasicExecutionRole",
+      ),
+    );
+
+    return role;
   }
 
   private getCertificate() {

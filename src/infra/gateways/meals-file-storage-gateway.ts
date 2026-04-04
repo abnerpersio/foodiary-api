@@ -2,6 +2,7 @@ import { Meal } from "@/application/entities/meal";
 import { Injectable } from "@/kernel/decorators/injectable";
 import { AppConfig } from "@/shared/config/app-config";
 import { MINUTE } from "@/shared/utils/time";
+import { HeadObjectCommand } from "@aws-sdk/client-s3";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import KSUID from "ksuid";
 import { s3Client } from "../clients/s3";
@@ -57,6 +58,26 @@ export class MealsFileStorageGateway {
     return { uploadSignature };
   }
 
+  async getFileMetadata({
+    fileKey,
+  }: MealsFileStorageGateway.GetFileMetadataParams): Promise<MealsFileStorageGateway.GetFileMetadataResult> {
+    const command = new HeadObjectCommand({
+      Bucket: this.appConfig.storage.mealsBucket,
+      Key: fileKey,
+    });
+
+    const { Metadata = {} } = await s3Client.send(command);
+
+    if (!Metadata.accountid || Metadata.mealid) {
+      throw new Error(`Cannot process file "${fileKey}"`);
+    }
+
+    return {
+      accountId: Metadata.accountid,
+      mealId: Metadata.mealId,
+    };
+  }
+
   getFileURL(fileKey: string) {
     return `https://${this.appConfig.cdn.mealsCdnDomainName}/${fileKey}`;
   }
@@ -80,5 +101,14 @@ export namespace MealsFileStorageGateway {
 
   export type CreatePostResult = {
     uploadSignature: string;
+  };
+
+  export type GetFileMetadataParams = {
+    fileKey: string;
+  };
+
+  export type GetFileMetadataResult = {
+    accountId: string;
+    mealId: string;
   };
 }
