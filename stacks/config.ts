@@ -34,6 +34,9 @@ namespace StackConfig {
       bucketName: string;
       mealsFileUpdloadedFnPath: string;
     };
+    queue: {
+      processMealFnPath: string;
+    };
     google: {
       clientId: string;
       clientSecret: string;
@@ -86,6 +89,9 @@ export const stackConfig = {
   storage: {
     bucketName: `${projectNameWithEnv}-storage`,
     mealsFileUpdloadedFnPath: "meals/on-meal-file-uploaded",
+  },
+  queue: {
+    processMealFnPath: "meals/queue/process-meal",
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID as string,

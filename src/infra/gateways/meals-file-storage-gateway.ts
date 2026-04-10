@@ -79,7 +79,7 @@ export class MealsFileStorageGateway {
   }
 
   getFileURL(fileKey: string) {
-    return `https://${this.appConfig.cdn.mealsCdnDomainName}/${fileKey}`;
+    return `https://${this.appConfig.cdns.mealsCdnDomainName}/${fileKey}`;
   }
 }
 

@@ -36,6 +36,7 @@
     "@aws-sdk/client-cognito-identity-provider": "^3.896.0",
     "@aws-sdk/client-dynamodb": "^3.896.0",
     "@aws-sdk/client-s3": "^3.922.0",
+    "@aws-sdk/client-sqs": "^3.1028.0",
     "@aws-sdk/lib-dynamodb": "^3.896.0",
     "@aws-sdk/s3-presigned-post": "^3.922.0",
     "@middy/core": "^6.4.5",

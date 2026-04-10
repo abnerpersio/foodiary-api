@@ -21,7 +21,7 @@ export class LambdaS3Adapter {
       const responses = await Promise.allSettled(
         event.Records.map(async (record) => {
           try {
-            await this.eventHandler.handle({
+            return await this.eventHandler.handle({
               fileKey: record.s3.object.key,
             });
           } catch (error) {
@@ -40,7 +40,10 @@ export class LambdaS3Adapter {
       );
 
       for (const event of failedEvents) {
-        JSON.stringify(event.reason, null, 2);
+        console.warn(
+          "[Lambda S3 adapter] unhandled error",
+          JSON.stringify(event.reason, null, 2),
+        );
       }
     };
   }
