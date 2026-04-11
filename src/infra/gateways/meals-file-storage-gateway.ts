@@ -68,13 +68,13 @@ export class MealsFileStorageGateway {
 
     const { Metadata = {} } = await s3Client.send(command);
 
-    if (!Metadata.accountid || Metadata.mealid) {
+    if (!Metadata.accountid || !Metadata.mealid) {
       throw new Error(`Cannot process file "${fileKey}"`);
     }
 
     return {
       accountId: Metadata.accountid,
-      mealId: Metadata.mealId,
+      mealId: Metadata.mealid,
     };
   }
 

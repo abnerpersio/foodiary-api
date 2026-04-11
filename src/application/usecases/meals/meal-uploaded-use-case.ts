@@ -18,10 +18,8 @@ export class MealUploadedUseCase {
   }: MealUploadedUseCase.Input): Promise<MealUploadedUseCase.Output> {
     const { accountId, mealId } =
       await this.mealsFileStorageGateway.getFileMetadata({ fileKey });
-    console.log("metadata", { accountId, mealId });
 
     const meal = await this.mealRepository.findById({ accountId, mealId });
-    console.log("meal", JSON.stringify(meal, null, 2));
     if (!meal) throw new NotFound("Meal");
 
     meal.status = Meal.Status.QUEUED;

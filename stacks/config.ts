@@ -36,6 +36,7 @@ namespace StackConfig {
     };
     queue: {
       processMealFnPath: string;
+      dlqAlarmEmail: string;
     };
     google: {
       clientId: string;
@@ -91,7 +92,8 @@ export const stackConfig = {
     mealsFileUpdloadedFnPath: "meals/on-meal-file-uploaded",
   },
   queue: {
-    processMealFnPath: "meals/queue/process-meal",
+    processMealFnPath: "meals/process-meal",
+    dlqAlarmEmail: process.env.MEALS_DLQ_ALARM_EMAIL,
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID as string,

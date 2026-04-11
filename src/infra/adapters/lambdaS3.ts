@@ -18,13 +18,14 @@ export class LambdaS3Adapter {
 
   build(): S3Handler {
     return async (event) => {
-      const responses = await Promise.allSettled(
+      await Promise.allSettled(
         event.Records.map(async (record) => {
           try {
             return await this.eventHandler.handle({
               fileKey: record.s3.object.key,
             });
           } catch (error) {
+            console.warn("[Lambda S3 adapter] unhandled error", error);
             Sentry.captureException(error, {
               extra: {
                 fileKey: record.s3.object.key,
@@ -34,17 +35,6 @@ export class LambdaS3Adapter {
           }
         }),
       );
-
-      const failedEvents = responses.filter(
-        (response) => response.status === "rejected",
-      );
-
-      for (const event of failedEvents) {
-        console.warn(
-          "[Lambda S3 adapter] unhandled error",
-          JSON.stringify(event.reason, null, 2),
-        );
-      }
     };
   }
 }

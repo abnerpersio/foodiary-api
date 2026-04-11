@@ -2,12 +2,14 @@ import "dotenv/config";
 
 import { ROUTES, type Route } from "@/routes";
 import * as cdk from "aws-cdk-lib";
-import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as apigatewayv2 from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpJwtAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
 import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cloudwatchActions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -18,6 +20,8 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import * as targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as s3Notification from "aws-cdk-lib/aws-s3-notifications";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as snsSubscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { stackConfig } from "./config";
@@ -63,6 +67,7 @@ export class MainStack extends cdk.Stack {
         this.userPoolClient.userPoolClientSecret.unsafeUnwrap(),
       COGNITO_POOL_ID: this.userPool.userPoolId,
       COGNITO_POOL_DOMAIN: this.userPoolDomain.domainName,
+      MEALS_QUEUE_URL: this.mealsQueue.queueUrl,
     };
 
     this.createLambdaRole();
@@ -163,10 +168,32 @@ export class MainStack extends cdk.Stack {
 
   // !SQS
   private createSQS() {
+    const alarmTopic = new sns.Topic(this, "QueueDLQTopic", {
+      topicName: stackConfig.stackName.concat("queue-dlq-topic"),
+    });
+    alarmTopic.addSubscription(
+      new snsSubscriptions.EmailSubscription(stackConfig.queue.dlqAlarmEmail),
+    );
+
     this.mealsQueueDLQ = new sqs.Queue(this, "ProcessMealQueueDLQ", {
       retentionPeriod: cdk.Duration.days(5),
       queueName: stackConfig.stackName.concat("process-meal-queue-dlq"),
     });
+
+    const mealsQueueAlarm = new cloudwatch.Alarm(this, "MealsQueueDLQAlarm", {
+      alarmName: stackConfig.stackName.concat("process-meal-dlq-alarm"),
+      alarmDescription: `Triggered when messages are found in ${this.mealsQueueDLQ.queueName}`,
+      metric: this.mealsQueueDLQ.metricApproximateNumberOfMessagesVisible({
+        period: cdk.Duration.seconds(60),
+        statistic: "Average",
+      }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      comparisonOperator:
+        cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    mealsQueueAlarm.addAlarmAction(new cloudwatchActions.SnsAction(alarmTopic));
 
     this.mealsQueue = new sqs.Queue(this, "ProcessMealQueue", {
       visibilityTimeout: cdk.Duration.seconds(130),
@@ -343,14 +370,10 @@ export class MainStack extends cdk.Stack {
 
   // !IAM
   private createLambdaRole() {
-    this.role = new iam.Role(
-      this,
-      `${stackConfig.projectName}-lambda-role`,
-      {
-        assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
-        description: `Role used by ${stackConfig.projectName} Lambda functions`,
-      },
-    );
+    this.role = new iam.Role(this, `${stackConfig.projectName}-lambda-role`, {
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+      description: `Role used by ${stackConfig.projectName} Lambda functions`,
+    });
 
     this.role.addToPolicy(
       new iam.PolicyStatement({
@@ -558,9 +581,9 @@ export class MainStack extends cdk.Stack {
       functionName: `${stackConfig.projectName}-${fnName}`,
       runtime: stackConfig.lambda.runtime,
       handler,
-      memorySize: 128,
+      memorySize: 1024,
       role: this.role,
-      timeout: cdk.Duration.seconds(30),
+      timeout: cdk.Duration.seconds(120),
       code: lambda.Code.fromAsset(asset),
       logGroup,
       environment: {

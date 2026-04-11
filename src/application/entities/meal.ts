@@ -10,7 +10,7 @@ export class Meal {
 
   icon: string;
   status: Meal.Status;
-  attempts: number | undefined;
+  attempts: number;
   name: string;
 
   foods: Meal.Food[];
