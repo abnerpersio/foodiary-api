@@ -93,7 +93,7 @@ export const stackConfig = {
   },
   queue: {
     processMealFnPath: "meals/process-meal",
-    dlqAlarmEmail: process.env.MEALS_DLQ_ALARM_EMAIL,
+    dlqAlarmEmail: process.env.DLQ_ALARM_EMAIL,
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID as string,
