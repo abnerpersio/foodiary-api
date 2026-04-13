@@ -18,7 +18,8 @@ export abstract class UnitOfWork {
     await dynamoClient.send(
       new TransactWriteCommand({
         TransactItems: this.transactItems,
-      })
+      }),
     );
+    this.transactItems = [];
   }
 }
