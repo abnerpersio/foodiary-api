@@ -1,5 +1,6 @@
 import { Meal } from "@/application/entities/meal";
 import { Injectable } from "@/kernel/decorators/injectable";
+import { Env } from "@/shared/config/env";
 import { downloadFileFromURL } from "@/shared/utils/download";
 import OpenAI, { toFile } from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
@@ -30,7 +31,9 @@ export class MealsAIGateway {
     private readonly mealsFileStorageGateway: MealsFileStorageGateway,
   ) {}
 
-  private readonly client = new OpenAI();
+  private readonly client = new OpenAI({
+    apiKey: Env.openaiApiKey,
+  });
 
   async processMeal(meal: Meal): Promise<MealsAIGateway.ProcessMealResult> {
     const mealFileURL = this.mealsFileStorageGateway.getFileURL(

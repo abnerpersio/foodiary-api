@@ -15,6 +15,7 @@ const schema = z.object({
   sentryDSN: z.string().optional(),
   sentryEnv: z.string().optional().default("prod"),
   nodeEnv: z.string().default("development"),
+  openaiApiKey: z.string(),
 });
 
 const { error, data } = schema.safeParse({
@@ -31,6 +32,7 @@ const { error, data } = schema.safeParse({
   sentryDSN: process.env.SENTRY_DSN,
   sentryEnv: process.env.SENTRY_ENV,
   nodeEnv: process.env.NODE_ENV,
+  openaiApiKey: process.env.OPENAI_API_KEY || "",
 });
 
 const ENV_IGNORE_SETUP = process.env.ENV_IGNORE_SETUP;
