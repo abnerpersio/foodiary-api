@@ -141,5 +141,6 @@ export const stackConfig = {
     API_DOMAIN_NAME: process.env.API_DOMAIN_NAME || "",
     SES_REGION: process.env.SES_REGION || "",
     SES_VERIFIED_DOMAIN: process.env.SES_VERIFIED_DOMAIN || "",
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
   },
 } as StackConfig.Config;
