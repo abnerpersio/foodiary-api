@@ -5,8 +5,6 @@ import { Registry } from "@/kernel/di/registry";
 import type { PreSignUpTriggerEvent } from "aws-lambda";
 
 const EXTERNAL_TRIGGER = "PreSignUp_ExternalProvider" as const;
-const authGateway = Registry.getInstance().resolve(AuthGateway);
-const accountRepository = Registry.getInstance().resolve(AccountRepository);
 
 const createUser = async ({
   email,
@@ -19,6 +17,9 @@ const createUser = async ({
   givenName: string;
   familyName: string;
 }) => {
+  const authGateway = Registry.getInstance().resolve(AuthGateway);
+  const accountRepository = Registry.getInstance().resolve(AccountRepository);
+
   const account = new Account({ email });
 
   const result = await authGateway.createUser({
@@ -31,7 +32,7 @@ const createUser = async ({
   });
 
   const externalId = result.user.Attributes?.find(
-    (attr) => attr.Name === "sub"
+    (attr) => attr.Name === "sub",
   )?.Value;
 
   if (!externalId) {
@@ -45,6 +46,8 @@ const createUser = async ({
 
 // TODO: implement route to validate if user has profile and create profile after signup
 export const handler = async (event: PreSignUpTriggerEvent) => {
+  const authGateway = Registry.getInstance().resolve(AuthGateway);
+
   event.response.autoConfirmUser = true;
   event.response.autoVerifyEmail = true;
 
@@ -66,8 +69,8 @@ export const handler = async (event: PreSignUpTriggerEvent) => {
     });
   }
 
-  const externalId = user.Attributes?.find(
-    (attr) => attr.Name === "sub"
+  const externalId = user?.Attributes?.find(
+    (attr) => attr.Name === "sub",
   )?.Value;
 
   if (!externalId) {

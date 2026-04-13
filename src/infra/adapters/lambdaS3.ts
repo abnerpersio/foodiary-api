@@ -10,18 +10,20 @@ import * as Sentry from "@sentry/node";
 import { S3Handler } from "aws-lambda";
 
 export class LambdaS3Adapter {
-  private readonly eventHandler: FileEventHandler;
-
-  constructor(eventHandlerImpl: Constructor<FileEventHandler>) {
-    this.eventHandler = Registry.getInstance().resolve(eventHandlerImpl);
-  }
+  constructor(
+    private readonly eventHandlerImpl: Constructor<FileEventHandler>,
+  ) {}
 
   build(): S3Handler {
     return async (event) => {
+      const eventHandler = Registry.getInstance().resolve(
+        this.eventHandlerImpl,
+      );
+
       await Promise.allSettled(
         event.Records.map(async (record) => {
           try {
-            return await this.eventHandler.handle({
+            return await eventHandler.handle({
               fileKey: record.s3.object.key,
             });
           } catch (error) {

@@ -96,7 +96,7 @@ export class MealsAIGateway {
     const { success, data, error } = mealSchema.safeParse(JSON.parse(json));
 
     if (!success) {
-      console.log("Zod error:", JSON.stringify(error.issues));
+      console.log("Zod error:", JSON.stringify(error.issues, null, 2));
       console.error("OpenAI response:", JSON.stringify(response, null, 2));
       throw new Error(`Failed processing meal "${mealId}"`);
     }

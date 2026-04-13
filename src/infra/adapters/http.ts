@@ -35,11 +35,11 @@ type HttpAdapterParams = {
 
 export class HttpAdapter {
   private readonly middlewares: Middleware[];
-  private readonly useCase: HttpUseCase<any>;
+  private readonly useCaseImpl: Constructor<HttpUseCase<any>>;
 
-  constructor({ middlewares = [], useCase: useCaseImpl }: HttpAdapterParams) {
+  constructor({ middlewares = [], useCase }: HttpAdapterParams) {
     this.middlewares = middlewares || [];
-    this.useCase = Registry.getInstance().resolve(useCaseImpl);
+    this.useCaseImpl = useCase;
   }
 
   build() {
@@ -66,6 +66,8 @@ export class HttpAdapter {
       )
       .use(this.middlewares)
       .handler(async (event: MiddyEvent, context: MiddyContext) => {
+        const useCase = Registry.getInstance().resolve(this.useCaseImpl);
+
         try {
           const {
             body,
@@ -75,7 +77,7 @@ export class HttpAdapter {
           } = event;
           const jwtClaims = requestContext.authorizer?.jwt?.claims as JWTClaims;
 
-          const result = await this.useCase.execute({
+          const result = await useCase.execute({
             query: queryStringParameters || {},
             params: pathParameters,
             body: body ?? {},

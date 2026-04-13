@@ -9,20 +9,18 @@ import * as Sentry from "@sentry/node";
 import { SQSHandler } from "aws-lambda";
 
 export class LambdaSQSAdapter {
-  private readonly consumer: QueueConsumer<any>;
-
-  constructor(consumerImpl: Constructor<QueueConsumer<any>>) {
-    this.consumer = Registry.getInstance().resolve(consumerImpl);
-  }
+  constructor(private readonly consumerImpl: Constructor<QueueConsumer<any>>) {}
 
   build(): SQSHandler {
     return async (event) => {
+      const consumer = Registry.getInstance().resolve(this.consumerImpl);
+
       // Suggetion: use SQS batch ID failure
       await Promise.all(
         event.Records.map(async (record) => {
           try {
             const message = JSON.parse(record.body);
-            return await this.consumer.process(message);
+            return await consumer.process(message);
           } catch (error) {
             console.warn("[Lambda SQS adapter] unhandled error", error);
             Sentry.captureException(error, {
