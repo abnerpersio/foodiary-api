@@ -38,7 +38,7 @@ export const ROUTES: Route[] = [
   },
   {
     fnPath: "accounts/get-me",
-    method: "POST",
+    method: "GET",
     route: "/me",
     private: true,
   },
