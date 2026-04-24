@@ -20,7 +20,7 @@ export class GetProfileAndGoalQuery {
       Limit: 2,
       ProjectionExpression:
         "#PK, #SK, #type, #name, #birthDate, #gender, #height, #weight, #calories, #proteins, #carbohydrates, #fats",
-      KeyConditionExpression: "#PK = :PK AND BEGINS_WITH(#SK, :SK)",
+      KeyConditionExpression: "#PK = :PK AND begins_with(#SK, :SK)",
       ExpressionAttributeNames: {
         "#PK": "PK",
         "#SK": "SK",
@@ -44,11 +44,11 @@ export class GetProfileAndGoalQuery {
     const { Items = [] } = await dynamoClient.send(command);
     const profile = Items.find(
       (item): item is GetProfileAndGoalQuery.ProfileItemType =>
-        item.type === ProfileItem.type
+        item.type === ProfileItem.type,
     );
     const goal = Items.find(
       (item): item is GetProfileAndGoalQuery.GoalItemType =>
-        item.type === GoalItem.type
+        item.type === GoalItem.type,
     );
 
     if (!profile || !goal) {
