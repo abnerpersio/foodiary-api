@@ -3,7 +3,7 @@ import { ErrorCode } from "./error-code";
 
 export class Unauthorized extends AppError {
   constructor() {
-    super(403, "Unauthorized", ErrorCode.UNAUTHORIZED);
+    super(401, "Unauthorized", ErrorCode.UNAUTHORIZED);
     this.name = "Unauthorized";
   }
 }
