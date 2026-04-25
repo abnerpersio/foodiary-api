@@ -13,16 +13,18 @@ import { getTextPrompt } from "../prompts/get-text-prompt";
 const mealSchema = z.object({
   name: z.string(),
   icon: z.string(),
-  foods: z.array(
-    z.object({
-      name: z.string(),
-      quantity: z.string(),
-      calories: z.number(),
-      carbohydrates: z.number(),
-      fats: z.number(),
-      proteins: z.number(),
-    }),
-  ),
+  foods: z
+    .array(
+      z.object({
+        name: z.string(),
+        quantity: z.string(),
+        calories: z.number(),
+        carbohydrates: z.number(),
+        fats: z.number(),
+        proteins: z.number(),
+      }),
+    )
+    .min(1),
 });
 
 @Injectable()

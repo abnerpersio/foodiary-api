@@ -117,6 +117,6 @@ async function uploadFile(
 }
 
 uploadFile(
-  path.resolve(__dirname, "assets", "refeicao.jpeg"),
+  path.resolve(__dirname, "assets", "refeicao.jpg"),
   "image/jpeg",
 ).catch(() => process.exit(1));
