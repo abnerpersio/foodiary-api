@@ -5,7 +5,7 @@ import { Injectable } from "@/kernel/decorators/injectable";
 @Injectable()
 export class GetMeUseCase implements HttpUseCase<"private"> {
   constructor(
-    private readonly getProfileAndGoalQuery: GetProfileAndGoalQuery
+    private readonly getProfileAndGoalQuery: GetProfileAndGoalQuery,
   ) {}
 
   async execute({
