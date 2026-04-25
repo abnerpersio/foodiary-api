@@ -16,7 +16,8 @@ export class ListMealsByDateQuery {
     const command = new QueryCommand({
       TableName: this.appConfig.db.dynamodb.mainTable,
       IndexName: "GSI1",
-      ProjectionExpression: "#GSI1PK, #type, #createdAt, #name, #icon, #foods",
+      ProjectionExpression:
+        "#GSI1PK, #type, #id, #createdAt, #name, #icon, #foods",
       KeyConditionExpression: "#GSI1PK = :GSI1PK",
       FilterExpression: "#status = :status",
       ScanIndexForward: false,
@@ -28,6 +29,7 @@ export class ListMealsByDateQuery {
         "#icon": "icon",
         "#foods": "foods",
         "#status": "status",
+        "#id": "id",
       },
       ExpressionAttributeValues: {
         ":GSI1PK": MealItem.getGSI1PK({
