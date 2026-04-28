@@ -57,7 +57,7 @@ export const ROUTES: Route[] = [
   {
     fnPath: "meals/get-meal",
     method: "GET",
-    route: "/meals/:mealId",
+    route: "/meals/{mealId}",
     private: true,
   },
   {

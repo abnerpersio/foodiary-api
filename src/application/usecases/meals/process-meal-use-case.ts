@@ -37,6 +37,12 @@ export class ProcessMealUseCase {
 
       const { icon, name, foods } = await this.mealsAIGateway.processMeal(meal);
 
+      if (!foods.length) {
+        meal.status = Meal.Status.FAILED;
+        await this.mealRepo.save(meal);
+        return;
+      }
+
       meal.foods = foods;
       meal.name = name;
       meal.icon = icon;
