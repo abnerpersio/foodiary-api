@@ -28,6 +28,7 @@ export const handler = async (event: PreSignUpTriggerEvent) => {
 
   if (!user) {
     accountToCreate = new Account({ email });
+
     const created = await authGateway.createUser({
       internalId: accountToCreate.id,
       email,
@@ -37,32 +38,23 @@ export const handler = async (event: PreSignUpTriggerEvent) => {
       profileImage: picture,
     });
 
-    const externalId = created.user.Attributes?.find(
-      (attr) => attr.Name === "sub",
-    )?.Value;
-
-    if (!externalId) {
-      throw new Error("Cannot create user to the native account.");
-    }
-
-    accountToCreate.externalId = externalId;
     user = created.user;
-  }
-
-  const externalId = user?.Attributes?.find(
-    (attr) => attr.Name === "sub",
-  )?.Value;
-
-  if (!externalId) {
-    throw new Error("Cannot link External Provider to the native account.");
   }
 
   const [providerName, providerUserId] = userName.split("_");
 
-  saga.addCompensation(() => authGateway.deleteUser({ externalId }));
+  saga.addCompensation(async () => {
+    if (!user.Username) return;
+    return await authGateway.deleteUser({ externalId: user.Username });
+  });
 
   await saga.run(async () => {
+    if (!user.Username) {
+      throw new Error("Cannot link External Provider to the native account.");
+    }
+
     if (accountToCreate) {
+      accountToCreate.externalId = user.Username;
       await accountRepo.create(accountToCreate);
     }
 
@@ -75,7 +67,7 @@ export const handler = async (event: PreSignUpTriggerEvent) => {
     });
     await authGateway.linkProvider({
       userPoolId,
-      nativeUserId: externalId,
+      nativeUserId: user.Username,
       providerName,
       providerUserId,
     });
