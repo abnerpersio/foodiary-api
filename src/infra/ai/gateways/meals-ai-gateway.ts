@@ -17,7 +17,6 @@ const mealSchema = z.object({
     z.object({
       name: z.string(),
       quantity: z.string(),
-      calories: z.number(),
       carbohydrates: z.number(),
       fats: z.number(),
       proteins: z.number(),
@@ -123,7 +122,7 @@ export namespace MealsAIGateway {
   export type ProcessMealResult = {
     name: string;
     icon: string;
-    foods: Meal.Food[];
+    foods: Omit<Meal.Food, "calories">[];
   };
 
   export type CallAIParams = {

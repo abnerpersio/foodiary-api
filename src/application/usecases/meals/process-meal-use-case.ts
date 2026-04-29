@@ -3,6 +3,7 @@ import { NotFound } from "@/application/errors/not-found";
 import { MealsAIGateway } from "@/infra/ai/gateways/meals-ai-gateway";
 import { MealRepository } from "@/infra/database/dynamo/repositories/meal-repository";
 import { Injectable } from "@/kernel/decorators/injectable";
+import { getFoodCalories } from "@/shared/utils/meal";
 
 const MAX_ATTEMPTS = 2;
 
@@ -43,7 +44,10 @@ export class ProcessMealUseCase {
         return;
       }
 
-      meal.foods = foods;
+      meal.foods = foods.map((food) => ({
+        ...food,
+        calories: getFoodCalories(food),
+      }));
       meal.name = name;
       meal.icon = icon;
       meal.status = Meal.Status.SUCCESS;
