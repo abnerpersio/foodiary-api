@@ -43,7 +43,7 @@ export const ROUTES: Route[] = [
     private: false,
   },
   {
-    fnPath: "accounts/get-me",
+    fnPath: "account/get-me",
     method: "GET",
     route: "/me",
     private: true,
@@ -67,13 +67,13 @@ export const ROUTES: Route[] = [
     private: true,
   },
   {
-    fnPath: "profiles/create-profile",
+    fnPath: "profile/create-profile",
     method: "POST",
     route: "/profile",
     private: true,
   },
   {
-    fnPath: "profiles/update-profile",
+    fnPath: "profile/update-profile",
     method: "PUT",
     route: "/profile",
     private: true,
@@ -85,7 +85,7 @@ export const ROUTES: Route[] = [
     private: true,
   },
   {
-    fnPath: "accounts/update-profile-picture",
+    fnPath: "profile/update-profile-picture",
     method: "POST",
     route: "/profile-picture",
     private: true,

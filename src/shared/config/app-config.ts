@@ -27,6 +27,7 @@ export class AppConfig {
 
     this.storage = {
       mealsBucket: Env.mealsBucketName,
+      accountsBucket: Env.accountsBucketName,
     };
 
     this.cdns = {
@@ -57,6 +58,7 @@ export namespace AppConfig {
 
   export type Storage = {
     mealsBucket: string;
+    accountsBucket: string;
   };
 
   export type CDNs = {

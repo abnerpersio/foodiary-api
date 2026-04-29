@@ -2,7 +2,12 @@ import type { Account } from "@/application/entities/account";
 import { dynamoClient } from "@/infra/clients/dynamo";
 import { Injectable } from "@/kernel/decorators/injectable";
 import { AppConfig } from "@/shared/config/app-config";
-import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { AccountItem } from "../items/account-item";
 
 @Injectable()
@@ -58,21 +63,5 @@ export class AccountRepository {
     if (!Item) return null;
 
     return AccountItem.toEntity(Item as AccountItem.ItemType);
-  }
-
-  async save(account: Account): Promise<void> {
-    const command = new UpdateCommand({
-      TableName: this.appConfig.db.dynamodb.mainTable,
-      Key: {
-        PK: AccountItem.getPK(account.id),
-        SK: AccountItem.getSK(account.id),
-      },
-      UpdateExpression: "SET profileImage = :profileImage",
-      ExpressionAttributeValues: {
-        ":profileImage": account.profileImage,
-      },
-    });
-
-    await dynamoClient.send(command);
   }
 }

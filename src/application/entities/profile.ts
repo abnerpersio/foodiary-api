@@ -7,6 +7,7 @@ export class Profile {
   gender: Profile.Gender;
   height: number;
   weight: number;
+  profileImage: string | null;
 
   readonly activityLevel: Profile.ActivityLevel;
   readonly goal: Profile.Goal;
@@ -18,6 +19,7 @@ export class Profile {
     this.gender = attr.gender;
     this.height = attr.height;
     this.weight = attr.weight;
+    this.profileImage = attr.profileImage ?? null;
     this.activityLevel = attr.activityLevel;
     this.goal = attr.goal;
     this.createdAt = attr.createdAt ?? new Date();
@@ -34,6 +36,7 @@ export namespace Profile {
     weight: number;
     activityLevel: Profile.ActivityLevel;
     goal: Profile.Goal;
+    profileImage?: string | null;
     createdAt?: Date;
   };
 

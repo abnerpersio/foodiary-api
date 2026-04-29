@@ -1,7 +1,7 @@
 import {
   createProfileSchema,
   CreateProfileUseCase,
-} from "@/application/usecases/profiles/create-profile-use-case";
+} from "@/application/usecases/profile/create-profile-use-case";
 import { HttpAdapter } from "@/infra/adapters/http";
 import { validator } from "@/infra/middlewares/validator";
 

@@ -23,6 +23,7 @@ export class ProfileItem {
   static fromEntity(profile: Profile) {
     return new ProfileItem({
       ...profile,
+      profileImage: profile.profileImage,
       birthDate: profile.birthDate.toISOString(),
       createdAt: profile.createdAt.toISOString(),
     });
@@ -31,6 +32,7 @@ export class ProfileItem {
   static toEntity(profileItem: ProfileItem.ItemType) {
     return new Profile({
       ...profileItem,
+      profileImage: profileItem.profileImage ?? null,
       birthDate: new Date(profileItem.birthDate),
       createdAt: new Date(profileItem.createdAt),
     });
@@ -60,6 +62,7 @@ export namespace ProfileItem {
     weight: number;
     activityLevel: Profile.ActivityLevel;
     goal: Profile.Goal;
+    profileImage: string | null;
     createdAt: string;
   };
 

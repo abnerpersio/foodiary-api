@@ -1,23 +1,27 @@
 import { Injectable } from "@/kernel/decorators/injectable";
 import { AppConfig } from "@/shared/config/app-config";
 import { MINUTE } from "@/shared/utils/time";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import KSUID from "ksuid";
 import { s3Client } from "../clients/s3";
+
+const EXPIRATION_IN_SECONDS = 60 * 60;
 
 @Injectable()
 export class AccountFileStorageGateway {
   constructor(private readonly appConfig: AppConfig) {}
 
   generateFileKey(accountId: string): string {
-    return `profile-pictures/${accountId}/${KSUID.randomSync().string}.jpeg`;
+    return `${accountId}/${KSUID.randomSync().string}.jpeg`;
   }
 
   async createPOST({
     key,
     accountId,
   }: AccountFileStorageGateway.CreatePostParams): Promise<AccountFileStorageGateway.CreatePostResult> {
-    const bucket = this.appConfig.storage.mealsBucket;
+    const bucket = this.appConfig.storage.accountsBucket;
 
     const { url, fields } = await createPresignedPost(s3Client, {
       Bucket: bucket,
@@ -47,8 +51,19 @@ export class AccountFileStorageGateway {
     return { uploadSignature };
   }
 
-  getFileURL(key: string): string {
-    return `https://${this.appConfig.cdns.mealsCdnDomainName}/${key}`;
+  async getFileURL(key: string): Promise<string> {
+    const bucket = this.appConfig.storage.accountsBucket;
+
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    });
+
+    const url = await getSignedUrl(s3Client as any, command, {
+      expiresIn: EXPIRATION_IN_SECONDS,
+    });
+
+    return url;
   }
 }
 

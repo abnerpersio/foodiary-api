@@ -1,4 +1,5 @@
 {
+  "packageManager": "pnpm@10.32.1",
   "scripts": {
     "build": "node esbuild.mjs",
     "clean": "rm -rf dist cdk.out",
@@ -39,6 +40,7 @@
     "@aws-sdk/client-sqs": "^3.1028.0",
     "@aws-sdk/lib-dynamodb": "^3.896.0",
     "@aws-sdk/s3-presigned-post": "^3.922.0",
+    "@aws-sdk/s3-request-presigner": "^3.922.0",
     "@middy/core": "^6.4.5",
     "@middy/http-cors": "^6.4.5",
     "@middy/http-json-body-parser": "^6.4.5",

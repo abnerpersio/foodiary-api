@@ -6,13 +6,11 @@ export class Account {
   readonly createdAt: Date;
 
   externalId: string | undefined;
-  profileImage: string | null;
 
   constructor(attr: Account.Attributes) {
     this.id = attr.id ?? KSUID.randomSync().string;
     this.email = attr.email;
     this.externalId = attr.externalId;
-    this.profileImage = attr.profileImage ?? null;
     this.createdAt = attr.createdAt ?? new Date();
   }
 }
@@ -23,6 +21,5 @@ export namespace Account {
     createdAt?: Date;
     email: string;
     externalId?: string;
-    profileImage?: string | null;
   };
 }

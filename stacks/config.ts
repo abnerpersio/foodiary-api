@@ -31,8 +31,9 @@ namespace StackConfig {
       apiName: string;
     };
     storage: {
-      bucketName: string;
+      mealsBucketName: string;
       mealsFileUpdloadedFnPath: string;
+      accountsBucketName: string;
     };
     queue: {
       processMealFnPath: string;
@@ -88,7 +89,8 @@ export const stackConfig = {
     apiName: projectNameWithEnv,
   },
   storage: {
-    bucketName: `${projectNameWithEnv}-storage`,
+    mealsBucketName: `${projectNameWithEnv}-storage`,
+    accountsBucketName: `${projectNameWithEnv}-accounts-storage`,
     mealsFileUpdloadedFnPath: "meals/on-meal-file-uploaded",
   },
   queue: {

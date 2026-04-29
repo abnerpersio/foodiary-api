@@ -29,7 +29,8 @@ import { createFunctionAsset, toKebabCase } from "./utils";
 
 export class MainStack extends cdk.Stack {
   private table!: dynamodb.Table;
-  private bucket!: s3.Bucket;
+  private mealsBucket!: s3.Bucket;
+  private accountsBucket!: s3.Bucket;
   private cdn!: cloudfront.Distribution;
   private cdnDomainName!: string;
   private mealsQueue!: sqs.Queue;
@@ -55,7 +56,8 @@ export class MainStack extends cdk.Stack {
       ...stackConfig.baseEnvironment,
       MAIN_TABLE_NAME: this.table.tableName,
       NODE_ENV: stackConfig.environment,
-      STORAGE_BUCKET_NAME: this.bucket.bucketName,
+      MEALS_STORAGE_BUCKET_NAME: this.mealsBucket.bucketName,
+      ACCOUNTS_STORAGE_BUCKET_NAME: this.accountsBucket.bucketName,
       CDN_DOMAIN_NAME: this.cdnDomainName,
     };
 
@@ -110,8 +112,19 @@ export class MainStack extends cdk.Stack {
 
   // !S3
   private createS3() {
-    this.bucket = new s3.Bucket(this, "StorageBucket", {
-      bucketName: stackConfig.storage.bucketName,
+    this.mealsBucket = new s3.Bucket(this, "StorageBucket", {
+      bucketName: stackConfig.storage.mealsBucketName,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      lifecycleRules: [
+        {
+          abortIncompleteMultipartUploadAfter: cdk.Duration.days(1),
+          id: "auto-delete-mpus-after-1-day",
+        },
+      ],
+    });
+
+    this.accountsBucket = new s3.Bucket(this, "AccountsStorageBucket", {
+      bucketName: stackConfig.storage.mealsBucketName,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       lifecycleRules: [
         {
@@ -128,7 +141,9 @@ export class MainStack extends cdk.Stack {
 
     this.cdn = new cloudfront.Distribution(this, "StorageBucketCDN", {
       defaultBehavior: {
-        origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket),
+        origin: origins.S3BucketOrigin.withOriginAccessControl(
+          this.mealsBucket,
+        ),
         compress: true,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
@@ -448,7 +463,10 @@ export class MainStack extends cdk.Stack {
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ["s3:GetObject", "s3:PutObject"],
-        resources: [this.bucket.bucketArn, `${this.bucket.bucketArn}/*`],
+        resources: [
+          this.mealsBucket.bucketArn,
+          `${this.mealsBucket.bucketArn}/*`,
+        ],
       }),
     );
 
@@ -595,7 +613,7 @@ export class MainStack extends cdk.Stack {
       },
     });
 
-    this.bucket.addEventNotification(
+    this.mealsBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
       new s3Notification.LambdaDestination(lambdaFn),
     );

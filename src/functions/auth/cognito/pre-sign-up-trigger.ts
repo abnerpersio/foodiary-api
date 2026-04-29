@@ -63,7 +63,7 @@ export const handler = async (event: PreSignUpTriggerEvent) => {
 
   await saga.run(async () => {
     if (accountToCreate) {
-      await accountRepo.save(accountToCreate);
+      await accountRepo.create(accountToCreate);
     }
 
     await authGateway.updateUser({
