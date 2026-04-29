@@ -87,7 +87,7 @@ export const ROUTES: Route[] = [
   {
     fnPath: "profile/update-profile-picture",
     method: "POST",
-    route: "/profile-picture",
+    route: "/profile/picture",
     private: true,
   },
 ];
