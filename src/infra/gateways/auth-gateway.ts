@@ -146,7 +146,9 @@ export class AuthGateway {
         { Name: "family_name", Value: lastName },
         { Name: "email", Value: email },
         { Name: "email_verified", Value: "true" },
-        { Name: "custom:profileImage", Value: profileImage || undefined },
+        ...(profileImage
+          ? [{ Name: "custom:profileImage", Value: profileImage }]
+          : []),
       ],
     });
 
