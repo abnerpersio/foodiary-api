@@ -37,6 +37,12 @@ export const ROUTES: Route[] = [
     private: false,
   },
   {
+    fnPath: "auth/exchange-code",
+    method: "POST",
+    route: "/auth/code",
+    private: false,
+  },
+  {
     fnPath: "accounts/get-me",
     method: "GET",
     route: "/me",
@@ -61,6 +67,12 @@ export const ROUTES: Route[] = [
     private: true,
   },
   {
+    fnPath: "profiles/create-profile",
+    method: "POST",
+    route: "/profile",
+    private: true,
+  },
+  {
     fnPath: "profiles/update-profile",
     method: "PUT",
     route: "/profile",
@@ -70,6 +82,12 @@ export const ROUTES: Route[] = [
     fnPath: "goals/update-goal",
     method: "PUT",
     route: "/goals",
+    private: true,
+  },
+  {
+    fnPath: "accounts/update-profile-picture",
+    method: "POST",
+    route: "/profile-picture",
     private: true,
   },
 ];

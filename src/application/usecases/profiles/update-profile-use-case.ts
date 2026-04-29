@@ -24,7 +24,7 @@ export class UpdateProfileUseCase implements HttpUseCase<"private"> {
   constructor(private readonly profileRepository: ProfileRepository) {}
 
   async execute(
-    request: HttpUseCase.Request<"private", UpdateProfileUseCase.Body>
+    request: HttpUseCase.Request<"private", UpdateProfileUseCase.Body>,
   ): Promise<HttpUseCase.Response> {
     const { accountId } = request;
 

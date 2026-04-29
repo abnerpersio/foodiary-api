@@ -15,6 +15,7 @@ export class AppConfig {
         clientId: Env.cognitoClientId,
         clientSecret: Env.cognitoClientSecret,
         poolId: Env.cognitoPoolId,
+        poolDomain: Env.cognitoPoolDomain,
       },
     };
 
@@ -44,6 +45,7 @@ export namespace AppConfig {
       clientId: string;
       clientSecret: string;
       poolId: string;
+      poolDomain: string;
     };
   };
 

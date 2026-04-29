@@ -23,7 +23,7 @@ export class UpdateGoalsUseCase implements HttpUseCase<"private"> {
   constructor(private readonly goalRepository: GoalRepository) {}
 
   async execute(
-    request: HttpUseCase.Request<"private", UpdateGoalsUseCase.Body>
+    request: HttpUseCase.Request<"private", UpdateGoalsUseCase.Body>,
   ): Promise<HttpUseCase.Response> {
     const { accountId } = request;
 

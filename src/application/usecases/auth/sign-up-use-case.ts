@@ -5,7 +5,7 @@ import { Profile } from "@/application/entities/profile";
 import { EmailAlreadyInUse } from "@/application/errors/email-already-in-use";
 import { GoalCalculator } from "@/application/services/goal-calculator";
 import { AccountRepository } from "@/infra/database/dynamo/repositories/account-repository";
-import { SignUpUnitOfWork } from "@/infra/database/dynamo/uow/sign-up-unit-of-work";
+import { CreateAccountUnitOfWork } from "@/infra/database/dynamo/uow/create-account-unit-of-work";
 import { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
 import { Saga } from "@/shared/saga/saga";
@@ -38,12 +38,12 @@ export class SignUpUseCase implements HttpUseCase<"public"> {
   constructor(
     private readonly authGateway: AuthGateway,
     private readonly accountRepository: AccountRepository,
-    private readonly signUpUow: SignUpUnitOfWork,
-    private readonly saga: Saga
+    private readonly createAccountUow: CreateAccountUnitOfWork,
+    private readonly saga: Saga,
   ) {}
 
   async execute(
-    request: HttpUseCase.Request<"public", SignUpUseCase.Body>
+    request: HttpUseCase.Request<"public", SignUpUseCase.Body>,
   ): Promise<HttpUseCase.Response> {
     const {
       account: { email, password },
@@ -68,11 +68,11 @@ export class SignUpUseCase implements HttpUseCase<"public"> {
     account.externalId = externalId;
 
     this.saga.addCompensation(() =>
-      this.authGateway.deleteUser({ externalId })
+      this.authGateway.deleteUser({ externalId }),
     );
 
     return this.saga.run(async () => {
-      await this.signUpUow.run({ account, goal, profile });
+      await this.createAccountUow.run({ account, goal, profile });
 
       const { accessToken, refreshToken } = await this.authGateway.signIn({
         email,

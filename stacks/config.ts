@@ -102,7 +102,11 @@ export const stackConfig = {
   cognito: {
     userPoolName: `${projectNameWithEnv}-pool`,
     userPoolDomainName: projectName,
-    oauthBaseCallbacks: ["http://localhost:5173"],
+    oauthBaseCallbacks: [
+      "http://localhost:5173/auth/callback",
+      "exp://localhost:8081/--/auth/calback",
+      "foodiary://auth/calback",
+    ],
     triggers: [
       {
         type: "pre-sign-up",

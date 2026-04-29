@@ -2,51 +2,15 @@ import { Account } from "@/application/entities/account";
 import { AccountRepository } from "@/infra/database/dynamo/repositories/account-repository";
 import { AuthGateway } from "@/infra/gateways/auth-gateway";
 import { Registry } from "@/kernel/di/registry";
+import { Saga } from "@/shared/saga/saga";
 import type { PreSignUpTriggerEvent } from "aws-lambda";
 
 const EXTERNAL_TRIGGER = "PreSignUp_ExternalProvider" as const;
 
-const createUser = async ({
-  email,
-  familyName,
-  givenName,
-  userPoolId,
-}: {
-  email: string;
-  userPoolId: string;
-  givenName: string;
-  familyName: string;
-}) => {
-  const authGateway = Registry.getInstance().resolve(AuthGateway);
-  const accountRepository = Registry.getInstance().resolve(AccountRepository);
-
-  const account = new Account({ email });
-
-  const result = await authGateway.createUser({
-    internalId: account.id,
-    email,
-    firstName: givenName,
-    lastName: familyName,
-    userPoolId,
-    profileImage: null,
-  });
-
-  const externalId = result.user.Attributes?.find(
-    (attr) => attr.Name === "sub",
-  )?.Value;
-
-  if (!externalId) {
-    throw new Error("Cannot create user to the native account.");
-  }
-
-  account.externalId = externalId;
-  await accountRepository.create(account);
-  return result.user;
-};
-
-// TODO: implement route to validate if user has profile and create profile after signup
 export const handler = async (event: PreSignUpTriggerEvent) => {
   const authGateway = Registry.getInstance().resolve(AuthGateway);
+  const saga = Registry.getInstance().resolve(Saga);
+  const accountRepo = Registry.getInstance().resolve(AccountRepository);
 
   event.response.autoConfirmUser = true;
   event.response.autoVerifyEmail = true;
@@ -56,17 +20,33 @@ export const handler = async (event: PreSignUpTriggerEvent) => {
   }
 
   const { userPoolId, userName } = event;
-  const { email, given_name, family_name } = event.request.userAttributes;
+  const { email, given_name, family_name, picture } =
+    event.request.userAttributes;
 
   let { user } = await authGateway.getUserByEmail({ email, userPoolId });
+  let accountToCreate: Account | undefined;
 
   if (!user) {
-    user = await createUser({
+    accountToCreate = new Account({ email });
+    const created = await authGateway.createUser({
+      internalId: accountToCreate.id,
       email,
+      firstName: given_name,
+      lastName: family_name,
       userPoolId,
-      familyName: family_name,
-      givenName: given_name,
+      profileImage: picture,
     });
+
+    const externalId = created.user.Attributes?.find(
+      (attr) => attr.Name === "sub",
+    )?.Value;
+
+    if (!externalId) {
+      throw new Error("Cannot create user to the native account.");
+    }
+
+    accountToCreate.externalId = externalId;
+    user = created.user;
   }
 
   const externalId = user?.Attributes?.find(
@@ -79,11 +59,26 @@ export const handler = async (event: PreSignUpTriggerEvent) => {
 
   const [providerName, providerUserId] = userName.split("_");
 
-  await authGateway.linkProvider({
-    userPoolId,
-    nativeUserId: externalId,
-    providerName,
-    providerUserId,
+  saga.addCompensation(() => authGateway.deleteUser({ externalId }));
+
+  await saga.run(async () => {
+    if (accountToCreate) {
+      await accountRepo.save(accountToCreate);
+    }
+
+    await authGateway.updateUser({
+      userPoolId,
+      email,
+      firstName: given_name,
+      lastName: family_name,
+      profileImage: picture,
+    });
+    await authGateway.linkProvider({
+      userPoolId,
+      nativeUserId: externalId,
+      providerName,
+      providerUserId,
+    });
   });
 
   return event;

@@ -39,6 +39,7 @@ export class MainStack extends cdk.Stack {
   private userPoolDomain!: cognito.UserPoolDomain;
   private api!: apigatewayv2.HttpApi;
   private role!: iam.Role;
+  private cognitoRole!: iam.Role;
   private logGroup!: logs.LogGroup;
   private authorizer!: HttpJwtAuthorizer;
   private lambdaEnvironment!: Record<string, string>;
@@ -66,7 +67,7 @@ export class MainStack extends cdk.Stack {
       COGNITO_CLIENT_SECRET:
         this.userPoolClient.userPoolClientSecret.unsafeUnwrap(),
       COGNITO_POOL_ID: this.userPool.userPoolId,
-      COGNITO_POOL_DOMAIN: this.userPoolDomain.domainName,
+      COGNITO_POOL_DOMAIN: this.userPoolDomain.baseUrl(),
       MEALS_QUEUE_URL: this.mealsQueue.queueUrl,
     };
 
@@ -272,9 +273,7 @@ export class MainStack extends cdk.Stack {
           cognito.OAuthScope.PROFILE,
           cognito.OAuthScope.OPENID,
         ],
-        callbackUrls: stackConfig.cognito.oauthBaseCallbacks.map(
-          (domain) => `${domain}/auth/callback`,
-        ),
+        callbackUrls: stackConfig.cognito.oauthBaseCallbacks,
       },
       accessTokenValidity: cdk.Duration.hours(12),
       supportedIdentityProviders: [
@@ -298,9 +297,49 @@ export class MainStack extends cdk.Stack {
       },
     });
 
+    this.createCognitoRole();
     this.createPreSignUpTrigger();
     this.createPreTokenTrigger();
     this.createCustomMessageTrigger();
+  }
+
+  private createCognitoRole() {
+    this.cognitoRole = new iam.Role(
+      this,
+      `${stackConfig.projectName}-cognito-lambda-role`,
+      {
+        assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+        description: `Role used by ${stackConfig.projectName} cognito functions`,
+      },
+    );
+
+    this.cognitoRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:Query",
+        ],
+        resources: [this.table.tableArn, `${this.table.tableArn}/index/*`],
+      }),
+    );
+
+    this.cognitoRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminCreateUser",
+          "cognito-idp:AdminDeleteUser",
+          "cognito-idp:AdminUpdateUserAttributes",
+          "cognito-idp:AdminLinkProviderForUser",
+        ],
+        resources: [this.userPool.userPoolArn],
+      }),
+    );
   }
 
   private createPreSignUpTrigger() {
@@ -360,6 +399,7 @@ export class MainStack extends cdk.Stack {
       memorySize: 128,
       timeout: cdk.Duration.seconds(30),
       code: lambda.Code.fromAsset(asset),
+      role: this.cognitoRole,
       logGroup,
       environment: {
         ...this.lambdaEnvironment,
@@ -397,6 +437,7 @@ export class MainStack extends cdk.Stack {
           "cognito-idp:ListUsers",
           "cognito-idp:AdminCreateUser",
           "cognito-idp:AdminDeleteUser",
+          "cognito-idp:AdminUpdateUserAttributes",
           "cognito-idp:AdminLinkProviderForUser",
         ],
         resources: [this.userPool.userPoolArn],

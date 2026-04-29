@@ -24,6 +24,7 @@ export class AccountItem {
   static fromEntity(account: Account) {
     return new AccountItem({
       ...account,
+      profileImage: account.profileImage,
       createdAt: account.createdAt.toISOString(),
     });
   }
@@ -31,6 +32,7 @@ export class AccountItem {
   static toEntity(accountItem: AccountItem.ItemType) {
     return new Account({
       ...accountItem,
+      profileImage: accountItem.profileImage ?? null,
       createdAt: new Date(accountItem.createdAt),
     });
   }
@@ -64,6 +66,7 @@ export namespace AccountItem {
     email: string;
     id: string;
     externalId: string | undefined;
+    profileImage: string | null;
     createdAt: string;
   };
 

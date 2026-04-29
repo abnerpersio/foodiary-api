@@ -1,16 +1,17 @@
+import { InvalidCredentials } from "@/application/errors/invalid-credentials";
 import { Injectable } from "@/kernel/decorators/injectable";
 import { AppConfig } from "@/shared/config/app-config";
 import {
   AdminCreateUserCommand,
   AdminDeleteUserCommand,
   AdminLinkProviderForUserCommand,
+  AdminUpdateUserAttributesCommand,
   ConfirmForgotPasswordCommand,
   ForgotPasswordCommand,
   GetTokensFromRefreshTokenCommand,
   InitiateAuthCommand,
   ListUsersCommand,
   SignUpCommand,
-  UserNotFoundException,
   type UserType,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { createHmac } from "node:crypto";
@@ -158,6 +159,28 @@ export class AuthGateway {
     return { user };
   }
 
+  async updateUser({
+    userPoolId,
+    email,
+    firstName,
+    lastName,
+    profileImage,
+  }: AuthGateway.UpdateUserParams): Promise<void> {
+    const command = new AdminUpdateUserAttributesCommand({
+      UserPoolId: userPoolId,
+      Username: email,
+      UserAttributes: [
+        { Name: "given_name", Value: firstName },
+        { Name: "family_name", Value: lastName },
+        ...(profileImage
+          ? [{ Name: "custom:profileImage", Value: profileImage }]
+          : []),
+      ],
+    });
+
+    await cognitoClient.send(command);
+  }
+
   async getUserByEmail({
     email,
     userPoolId,
@@ -186,6 +209,43 @@ export class AuthGateway {
     } while (paginationToken);
 
     return { user };
+  }
+
+  async exchangeCode({
+    code,
+    redirectUri,
+  }: AuthGateway.ExchangeCodeParams): Promise<AuthGateway.ExchangeCodeResult> {
+    const { clientId, clientSecret, poolDomain } = this.appConfig.auth.cognito;
+
+    const body = new URLSearchParams({
+      grant_type: "authorization_code",
+      redirect_uri: redirectUri,
+      code,
+    });
+
+    const authToken = Buffer.from(`${clientId}:${clientSecret}`).toString(
+      "base64",
+    );
+
+    const response = await fetch(`${poolDomain}/oauth2/token`, {
+      method: "POST",
+      body: body.toString(),
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${authToken}`,
+      },
+    });
+
+    if (!response.ok) throw new InvalidCredentials();
+
+    const { access_token, refresh_token } = (await response.json()) as {
+      access_token?: string;
+      refresh_token?: string;
+    };
+
+    if (!access_token || !refresh_token) throw new InvalidCredentials();
+
+    return { accessToken: access_token, refreshToken: refresh_token };
   }
 
   async linkProvider({
@@ -305,5 +365,23 @@ export namespace AuthGateway {
     nativeUserId: string;
     providerName: string;
     providerUserId: string;
+  };
+
+  export type UpdateUserParams = {
+    userPoolId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    profileImage: string | null;
+  };
+
+  export type ExchangeCodeParams = {
+    code: string;
+    redirectUri: string;
+  };
+
+  export type ExchangeCodeResult = {
+    accessToken: string;
+    refreshToken: string;
   };
 }
