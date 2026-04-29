@@ -106,8 +106,8 @@ export const stackConfig = {
     userPoolDomainName: projectName,
     oauthBaseCallbacks: [
       "http://localhost:5173/auth/callback",
-      "exp://localhost:8081/--/auth/calback",
-      "foodiary://auth/calback",
+      "exp://localhost:8081/--/auth/callback",
+      "foodiary://auth/callback",
     ],
     triggers: [
       {

@@ -341,20 +341,22 @@ export class MainStack extends cdk.Stack {
       }),
     );
 
-    // this.cognitoRole.addToPolicy(
-    //   new iam.PolicyStatement({
-    //     effect: iam.Effect.ALLOW,
-    //     actions: [
-    //       "cognito-idp:AdminGetUser",
-    //       "cognito-idp:ListUsers",
-    //       "cognito-idp:AdminCreateUser",
-    //       "cognito-idp:AdminDeleteUser",
-    //       "cognito-idp:AdminUpdateUserAttributes",
-    //       "cognito-idp:AdminLinkProviderForUser",
-    //     ],
-    //     resources: [this.userPool.userPoolArn],
-    //   }),
-    // );
+    this.cognitoRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminCreateUser",
+          "cognito-idp:AdminDeleteUser",
+          "cognito-idp:AdminUpdateUserAttributes",
+          "cognito-idp:AdminLinkProviderForUser",
+        ],
+        resources: [
+          `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`,
+        ],
+      }),
+    );
   }
 
   private createPreSignUpTrigger() {
