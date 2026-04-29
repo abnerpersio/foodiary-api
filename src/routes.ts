@@ -38,7 +38,7 @@ export const ROUTES: Route[] = [
   },
   {
     fnPath: "auth/exchange-code",
-    method: "POST",
+    method: "GET",
     route: "/auth/code",
     private: false,
   },
