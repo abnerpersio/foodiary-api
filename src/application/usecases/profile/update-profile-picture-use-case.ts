@@ -46,7 +46,7 @@ export class UpdateProfilePictureUseCase implements HttpUseCase<"private"> {
       { key, accountId },
     );
 
-    profile.profileImage = key;
+    profile.profileImageKey = key;
     await this.profileRepository.save(profile);
 
     return {

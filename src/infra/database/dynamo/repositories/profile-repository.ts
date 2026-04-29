@@ -38,6 +38,7 @@ export class ProfileRepository {
       "gender",
       "height",
       "weight",
+      "profileImageKey",
     ] as (keyof ProfileItem.ItemType)[];
 
     const command = new UpdateCommand({
@@ -47,15 +48,15 @@ export class ProfileRepository {
         SK: profileItem.SK,
       },
       UpdateExpression: `SET ${updateFields.map(
-        (field) => `#${field} = :${field}`
+        (field) => `#${field} = :${field}`,
       )}`,
       ExpressionAttributeNames: Object.fromEntries(
-        updateFields.map((field) => [`#${field}`, field])
+        updateFields.map((field) => [`#${field}`, field]),
       ),
       ExpressionAttributeValues: Object.fromEntries(
-        updateFields.map((field) => [`:${field}`, profileItem[field]])
+        updateFields.map((field) => [`:${field}`, profileItem[field]]),
       ),
-      ReturnValues: 'NONE'
+      ReturnValues: "NONE",
     });
 
     await dynamoClient.send(command);

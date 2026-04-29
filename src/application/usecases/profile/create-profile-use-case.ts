@@ -2,6 +2,7 @@ import { HttpUseCase } from "@/application/contracts/use-case";
 import { Goal } from "@/application/entities/goal";
 import { Profile } from "@/application/entities/profile";
 import { GoalCalculator } from "@/application/services/goal-calculator";
+import { ProfileRepository } from "@/infra/database/dynamo/repositories/profile-repository";
 import { CreateProfileUnitOfWork } from "@/infra/database/dynamo/uow/create-profile-unit-of-work";
 import { Injectable } from "@/kernel/decorators/injectable";
 import z from "zod";
@@ -24,12 +25,18 @@ export namespace CreateProfileUseCase {
 
 @Injectable()
 export class CreateProfileUseCase implements HttpUseCase<"private"> {
-  constructor(private readonly createProfileUow: CreateProfileUnitOfWork) {}
+  constructor(
+    private readonly profileRepo: ProfileRepository,
+    private readonly createProfileUow: CreateProfileUnitOfWork,
+  ) {}
 
   async execute(
     request: HttpUseCase.Request<"private", CreateProfileUseCase.Body>,
   ): Promise<HttpUseCase.Response> {
     const { accountId, body } = request;
+
+    const hasProfile = await this.profileRepo.findByAccountId(accountId);
+    if (!!hasProfile) return { status: 204 };
 
     const profile = new Profile({ ...body, accountId });
     const goal = new Goal({ ...GoalCalculator.calculate(profile), accountId });

@@ -124,7 +124,7 @@ export class MainStack extends cdk.Stack {
     });
 
     this.accountsBucket = new s3.Bucket(this, "AccountsStorageBucket", {
-      bucketName: stackConfig.storage.mealsBucketName,
+      bucketName: stackConfig.storage.accountsBucketName,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       lifecycleRules: [
         {
@@ -341,20 +341,20 @@ export class MainStack extends cdk.Stack {
       }),
     );
 
-    this.cognitoRole.addToPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "cognito-idp:AdminGetUser",
-          "cognito-idp:ListUsers",
-          "cognito-idp:AdminCreateUser",
-          "cognito-idp:AdminDeleteUser",
-          "cognito-idp:AdminUpdateUserAttributes",
-          "cognito-idp:AdminLinkProviderForUser",
-        ],
-        resources: [this.userPool.userPoolArn],
-      }),
-    );
+    // this.cognitoRole.addToPolicy(
+    //   new iam.PolicyStatement({
+    //     effect: iam.Effect.ALLOW,
+    //     actions: [
+    //       "cognito-idp:AdminGetUser",
+    //       "cognito-idp:ListUsers",
+    //       "cognito-idp:AdminCreateUser",
+    //       "cognito-idp:AdminDeleteUser",
+    //       "cognito-idp:AdminUpdateUserAttributes",
+    //       "cognito-idp:AdminLinkProviderForUser",
+    //     ],
+    //     resources: [this.userPool.userPoolArn],
+    //   }),
+    // );
   }
 
   private createPreSignUpTrigger() {
@@ -466,6 +466,8 @@ export class MainStack extends cdk.Stack {
         resources: [
           this.mealsBucket.bucketArn,
           `${this.mealsBucket.bucketArn}/*`,
+          this.accountsBucket.bucketArn,
+          `${this.accountsBucket.bucketArn}/*`,
         ],
       }),
     );

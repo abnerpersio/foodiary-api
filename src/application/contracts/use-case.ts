@@ -2,7 +2,7 @@ type TRouteType = "public" | "private";
 
 export interface HttpUseCase<TType extends TRouteType> {
   execute(
-    request: HttpUseCase.Request<TType, any, any, any>
+    request: HttpUseCase.Request<TType, any, any, any>,
   ): Promise<HttpUseCase.Response>;
 }
 
@@ -12,7 +12,7 @@ export namespace HttpUseCase {
   export type BaseRequest<
     TBody extends DefaultData = undefined,
     TParams = Record<string, string>,
-    TQueryParams = Record<string, string>
+    TQueryParams = Record<string, string>,
   > = {
     body: TBody;
     params: TParams;
@@ -22,7 +22,7 @@ export namespace HttpUseCase {
   type PublicRequest<
     TBody extends DefaultData = undefined,
     TParams = Record<string, unknown>,
-    TQueryParams = Record<string, unknown>
+    TQueryParams = Record<string, unknown>,
   > = BaseRequest<TBody, TParams, TQueryParams> & {
     accountId: null;
   };
@@ -30,7 +30,7 @@ export namespace HttpUseCase {
   type PrivateRequest<
     TBody extends DefaultData = undefined,
     TParams = Record<string, unknown>,
-    TQueryParams = Record<string, unknown>
+    TQueryParams = Record<string, unknown>,
   > = BaseRequest<TBody, TParams, TQueryParams> & {
     accountId: string;
   };
@@ -39,7 +39,7 @@ export namespace HttpUseCase {
     TType extends TRouteType,
     TBody extends DefaultData = undefined,
     TParams = Record<string, unknown>,
-    TQueryParams = Record<string, unknown>
+    TQueryParams = Record<string, unknown>,
   > = TType extends "public"
     ? PublicRequest<TBody, TParams, TQueryParams>
     : PrivateRequest<TBody, TParams, TQueryParams>;

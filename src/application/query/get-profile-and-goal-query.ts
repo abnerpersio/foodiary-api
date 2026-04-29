@@ -2,6 +2,7 @@ import { dynamoClient } from "@/infra/clients/dynamo";
 import { AccountItem } from "@/infra/database/dynamo/items/account-item";
 import { GoalItem } from "@/infra/database/dynamo/items/goal-item";
 import { ProfileItem } from "@/infra/database/dynamo/items/profile-item";
+import { AccountFileStorageGateway } from "@/infra/gateways/account-file-storage-gateway";
 import { Injectable } from "@/kernel/decorators/injectable";
 import { AppConfig } from "@/shared/config/app-config";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
@@ -10,7 +11,10 @@ import { ResourceNotFound } from "../errors/resource-not-found";
 
 @Injectable()
 export class GetProfileAndGoalQuery {
-  constructor(private readonly appConfig: AppConfig) {}
+  constructor(
+    private readonly appConfig: AppConfig,
+    private readonly accountFileStorageGateway: AccountFileStorageGateway,
+  ) {}
 
   async execute({
     accountId,
@@ -19,13 +23,14 @@ export class GetProfileAndGoalQuery {
       TableName: this.appConfig.db.dynamodb.mainTable,
       Limit: 2,
       ProjectionExpression:
-        "#PK, #SK, #type, #name, #birthDate, #gender, #height, #weight, #calories, #proteins, #carbohydrates, #fats, #goal",
+        "#PK, #SK, #type, #name, #profileImageKey, #birthDate, #gender, #height, #weight, #calories, #proteins, #carbohydrates, #fats, #goal",
       KeyConditionExpression: "#PK = :PK AND begins_with(#SK, :SK)",
       ExpressionAttributeNames: {
         "#PK": "PK",
         "#SK": "SK",
         "#type": "type",
         "#name": "name",
+        "#profileImageKey": "profileImageKey",
         "#birthDate": "birthDate",
         "#gender": "gender",
         "#height": "height",
@@ -64,6 +69,11 @@ export class GetProfileAndGoalQuery {
         height: profile.height,
         weight: profile.weight,
         goal: profile.goal,
+        profileImage: profile.profileImageKey
+          ? await this.accountFileStorageGateway.getFileURL(
+              profile.profileImageKey,
+            )
+          : null,
       },
       goal: {
         calories: goal.calories,
@@ -91,6 +101,7 @@ export namespace GetProfileAndGoalQuery {
     | "height"
     | "weight"
     | "goal"
+    | "profileImageKey"
   >;
   export type GoalItemType = Pick<
     GoalItem.ItemType,
@@ -105,6 +116,7 @@ export namespace GetProfileAndGoalQuery {
       height: number;
       weight: number;
       goal: Profile.Goal;
+      profileImage: string | null;
     };
     goal: {
       calories: number;
