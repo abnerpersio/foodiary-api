@@ -216,6 +216,7 @@ export class AuthGateway {
   async exchangeCode({
     code,
     redirectUri,
+    codeVerifier,
   }: AuthGateway.ExchangeCodeParams): Promise<AuthGateway.ExchangeCodeResult> {
     const { clientId, clientSecret, poolDomain } = this.appConfig.auth.cognito;
 
@@ -223,6 +224,7 @@ export class AuthGateway {
       grant_type: "authorization_code",
       redirect_uri: redirectUri,
       code,
+      code_verifier: codeVerifier,
     });
 
     const authToken = Buffer.from(`${clientId}:${clientSecret}`).toString(
@@ -380,6 +382,7 @@ export namespace AuthGateway {
   export type ExchangeCodeParams = {
     code: string;
     redirectUri: string;
+    codeVerifier: string;
   };
 
   export type ExchangeCodeResult = {

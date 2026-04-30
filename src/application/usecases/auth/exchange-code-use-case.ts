@@ -7,6 +7,7 @@ export const exchangeCodeSchema = z.object({
   query: z.object({
     code: z.string().min(1, "Required"),
     redirect_uri: z.string().min(1, "Required"),
+    code_verifier: z.string().min(1, "Required"),
   }),
 });
 
@@ -21,11 +22,12 @@ export class ExchangeCodeUseCase implements HttpUseCase<"public"> {
   async execute(
     request: HttpUseCase.Request<"public", undefined, Record<string, unknown>, ExchangeCodeUseCase.Query>
   ): Promise<HttpUseCase.Response> {
-    const { code, redirect_uri } = request.query;
+    const { code, redirect_uri, code_verifier } = request.query;
 
     const { accessToken, refreshToken } = await this.authGateway.exchangeCode({
       code,
       redirectUri: redirect_uri,
+      codeVerifier: code_verifier,
     });
 
     return {
