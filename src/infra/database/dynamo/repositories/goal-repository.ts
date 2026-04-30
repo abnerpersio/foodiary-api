@@ -18,8 +18,8 @@ export class GoalRepository {
     const command = new GetCommand({
       TableName: this.appConfig.db.dynamodb.mainTable,
       Key: {
-        PK: GoalItem.getPK(accountId),
-        SK: GoalItem.getSK(accountId),
+        PK: GoalItem.getPK({ accountId }),
+        SK: GoalItem.getSK({ accountId }),
       },
     });
 
@@ -46,13 +46,13 @@ export class GoalRepository {
         SK: goalItem.SK,
       },
       UpdateExpression: `SET ${updateFields.map(
-        (field) => `#${field} = :${field}`
+        (field) => `#${field} = :${field}`,
       )}`,
       ExpressionAttributeNames: Object.fromEntries(
-        updateFields.map((field) => [`#${field}`, field])
+        updateFields.map((field) => [`#${field}`, field]),
       ),
       ExpressionAttributeValues: Object.fromEntries(
-        updateFields.map((field) => [`:${field}`, goalItem[field]])
+        updateFields.map((field) => [`:${field}`, goalItem[field]]),
       ),
       ReturnValues: "NONE",
     });

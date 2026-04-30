@@ -21,8 +21,8 @@ export class MealRepository {
     const command = new GetCommand({
       TableName: this.appConfig.db.dynamodb.mainTable,
       Key: {
-        PK: MealItem.getPK({ accountId, mealId }),
-        SK: MealItem.getSK({ accountId, mealId }),
+        PK: MealItem.getPK({ accountId, id: mealId }),
+        SK: MealItem.getSK({ accountId, id: mealId }),
       },
     });
 

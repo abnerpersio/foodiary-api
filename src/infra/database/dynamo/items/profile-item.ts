@@ -7,8 +7,8 @@ export class ProfileItem {
 
   constructor(private readonly attrs: ProfileItem.Attributes) {
     this.keys = {
-      PK: ProfileItem.getPK(this.attrs.accountId),
-      SK: ProfileItem.getSK(this.attrs.accountId),
+      PK: ProfileItem.getPK(this.attrs),
+      SK: ProfileItem.getSK(this.attrs),
     };
   }
 
@@ -38,12 +38,16 @@ export class ProfileItem {
     });
   }
 
-  static getPK(accountId: string): ProfileItem.Keys["PK"] {
-    return `ACCOUNT#${accountId}`;
+  static getPK(
+    attrs: Pick<ProfileItem.Attributes, "accountId">,
+  ): ProfileItem.Keys["PK"] {
+    return `ACCOUNT#${attrs.accountId}`;
   }
 
-  static getSK(accountId: string): ProfileItem.Keys["SK"] {
-    return `ACCOUNT#${accountId}#PROFILE`;
+  static getSK(
+    attrs: Pick<ProfileItem.Attributes, "accountId">,
+  ): ProfileItem.Keys["SK"] {
+    return `ACCOUNT#${attrs.accountId}#PROFILE`;
   }
 }
 

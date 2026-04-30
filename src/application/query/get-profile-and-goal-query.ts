@@ -42,8 +42,8 @@ export class GetProfileAndGoalQuery {
         "#goal": "goal",
       },
       ExpressionAttributeValues: {
-        ":PK": AccountItem.getPK(accountId),
-        ":SK": `${AccountItem.getPK(accountId)}#`,
+        ":PK": AccountItem.getPK({ id: accountId }),
+        ":SK": `${AccountItem.getPK({ id: accountId })}#`,
       },
     });
 

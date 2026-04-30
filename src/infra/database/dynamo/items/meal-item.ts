@@ -6,19 +6,10 @@ export class MealItem {
 
   constructor(private readonly attrs: MealItem.Attributes) {
     this.keys = {
-      PK: MealItem.getPK({
-        accountId: this.attrs.accountId,
-        mealId: this.attrs.id,
-      }),
-      SK: MealItem.getSK({
-        accountId: this.attrs.accountId,
-        mealId: this.attrs.id,
-      }),
-      GSI1PK: MealItem.getGSI1PK({
-        accountId: this.attrs.accountId,
-        createdAt: new Date(this.attrs.createdAt),
-      }),
-      GSI1SK: MealItem.getGSI1SK(this.attrs.id),
+      PK: MealItem.getPK(this.attrs),
+      SK: MealItem.getSK(this.attrs),
+      GSI1PK: MealItem.getGSI1PK(this.attrs),
+      GSI1SK: MealItem.getGSI1SK(this.attrs),
     };
   }
 
@@ -44,26 +35,34 @@ export class MealItem {
     });
   }
 
-  static getPK({ accountId, mealId }: MealItem.PKParams): MealItem.Keys["PK"] {
-    return `ACCOUNT#${accountId}#MEAL#${mealId}`;
+  static getPK(
+    attrs: Pick<MealItem.Attributes, "accountId" | "id">,
+  ): MealItem.Keys["PK"] {
+    return `ACCOUNT#${attrs.accountId}#MEAL#${attrs.id}`;
   }
 
-  static getSK({ accountId, mealId }: MealItem.SKParams): MealItem.Keys["SK"] {
-    return `ACCOUNT#${accountId}#MEAL#${mealId}`;
+  static getSK(
+    attrs: Pick<MealItem.Attributes, "accountId" | "id">,
+  ): MealItem.Keys["SK"] {
+    return `ACCOUNT#${attrs.accountId}#MEAL#${attrs.id}`;
   }
 
-  static getGSI1PK({
-    accountId,
-    createdAt,
-  }: MealItem.GSI1PKParams): MealItem.Keys["GSI1PK"] {
+  static getGSI1PK(
+    attrs: Pick<MealItem.Attributes, "accountId"> & {
+      createdAt: string | Date;
+    },
+  ): MealItem.Keys["GSI1PK"] {
+    const createdAt = new Date(attrs.createdAt);
     const year = createdAt.getFullYear();
     const month = (createdAt.getMonth() + 1).toString().padStart(2, "0");
     const day = createdAt.getDate().toString().padStart(2, "0");
-    return `MEALS#${accountId}#${year}-${month}-${day}`;
+    return `MEALS#${attrs.accountId}#${year}-${month}-${day}`;
   }
 
-  static getGSI1SK(mealId: string): MealItem.Keys["GSI1SK"] {
-    return `MEAL#${mealId}`;
+  static getGSI1SK(
+    attrs: Pick<MealItem.Attributes, "id">,
+  ): MealItem.Keys["GSI1SK"] {
+    return `MEAL#${attrs.id}`;
   }
 }
 
@@ -89,9 +88,4 @@ export namespace MealItem {
   };
 
   export type ItemType = Keys & Attributes & { type: "Meal" };
-
-  export type PKParams = { accountId: string; mealId: string };
-  export type SKParams = { accountId: string; mealId: string };
-
-  export type GSI1PKParams = { accountId: string; createdAt: Date };
 }

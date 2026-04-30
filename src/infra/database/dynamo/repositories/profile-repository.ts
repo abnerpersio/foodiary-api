@@ -18,8 +18,8 @@ export class ProfileRepository {
     const command = new GetCommand({
       TableName: this.appConfig.db.dynamodb.mainTable,
       Key: {
-        PK: ProfileItem.getPK(accountId),
-        SK: ProfileItem.getSK(accountId),
+        PK: ProfileItem.getPK({ accountId }),
+        SK: ProfileItem.getSK({ accountId }),
       },
     });
 

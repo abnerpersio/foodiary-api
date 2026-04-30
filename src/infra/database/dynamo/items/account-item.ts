@@ -6,10 +6,10 @@ export class AccountItem {
 
   constructor(private readonly attrs: AccountItem.Attributes) {
     this.keys = {
-      PK: AccountItem.getPK(this.attrs.id),
-      SK: AccountItem.getSK(this.attrs.id),
-      GSI1PK: AccountItem.getGSI1PK(this.attrs.id),
-      GSI1SK: AccountItem.getGSI1SK(this.attrs.id),
+      PK: AccountItem.getPK(this.attrs),
+      SK: AccountItem.getSK(this.attrs),
+      GSI1PK: AccountItem.getGSI1PK(this.attrs),
+      GSI1SK: AccountItem.getGSI1SK(this.attrs),
     };
   }
 
@@ -35,20 +35,28 @@ export class AccountItem {
     });
   }
 
-  static getPK(accountId: string): AccountItem.Keys["PK"] {
-    return `ACCOUNT#${accountId}`;
+  static getPK(
+    attrs: Pick<AccountItem.Attributes, "id">,
+  ): AccountItem.Keys["PK"] {
+    return `ACCOUNT#${attrs.id}`;
   }
 
-  static getSK(accountId: string): AccountItem.Keys["SK"] {
-    return `ACCOUNT#${accountId}`;
+  static getSK(
+    attrs: Pick<AccountItem.Attributes, "id">,
+  ): AccountItem.Keys["SK"] {
+    return `ACCOUNT#${attrs.id}`;
   }
 
-  static getGSI1PK(email: string): AccountItem.Keys["GSI1PK"] {
-    return `ACCOUNT#${email}`;
+  static getGSI1PK(
+    attrs: Pick<AccountItem.Attributes, "email">,
+  ): AccountItem.Keys["GSI1PK"] {
+    return `ACCOUNT#${attrs.email}`;
   }
 
-  static getGSI1SK(email: string): AccountItem.Keys["GSI1SK"] {
-    return `ACCOUNT#${email}`;
+  static getGSI1SK(
+    attrs: Pick<AccountItem.Attributes, "email">,
+  ): AccountItem.Keys["GSI1SK"] {
+    return `ACCOUNT#${attrs.email}`;
   }
 }
 

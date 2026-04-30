@@ -19,8 +19,7 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-    "jsx": "react",
-    "ignoreDeprecations": "6.0"
+    "jsx": "react"
   },
   "include": ["src/**/*.ts", "stacks/**/*.ts"],
   "exclude": [

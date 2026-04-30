@@ -2,12 +2,7 @@ import type { Account } from "@/application/entities/account";
 import { dynamoClient } from "@/infra/clients/dynamo";
 import { Injectable } from "@/kernel/decorators/injectable";
 import { AppConfig } from "@/shared/config/app-config";
-import {
-  GetCommand,
-  PutCommand,
-  QueryCommand,
-  UpdateCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { GetCommand, PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { AccountItem } from "../items/account-item";
 
 @Injectable()
@@ -25,8 +20,8 @@ export class AccountRepository {
         "#GSI1SK": "GSI1SK",
       },
       ExpressionAttributeValues: {
-        ":GSI1PK": AccountItem.getGSI1PK(email),
-        ":GSI1SK": AccountItem.getGSI1SK(email),
+        ":GSI1PK": AccountItem.getGSI1PK({ email }),
+        ":GSI1SK": AccountItem.getGSI1SK({ email }),
       },
     });
 
@@ -54,8 +49,8 @@ export class AccountRepository {
     const command = new GetCommand({
       TableName: this.appConfig.db.dynamodb.mainTable,
       Key: {
-        PK: AccountItem.getPK(id),
-        SK: AccountItem.getSK(id),
+        PK: AccountItem.getPK({ id }),
+        SK: AccountItem.getSK({ id }),
       },
     });
 

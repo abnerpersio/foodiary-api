@@ -7,8 +7,8 @@ export class GoalItem {
 
   constructor(private readonly attrs: GoalItem.Attributes) {
     this.keys = {
-      PK: GoalItem.getPK(this.attrs.accountId),
-      SK: GoalItem.getSK(this.attrs.accountId),
+      PK: GoalItem.getPK(this.attrs),
+      SK: GoalItem.getSK(this.attrs),
     };
   }
 
@@ -34,12 +34,16 @@ export class GoalItem {
     });
   }
 
-  static getPK(accountId: string): GoalItem.Keys["PK"] {
-    return `ACCOUNT#${accountId}`;
+  static getPK(
+    attrs: Pick<GoalItem.Attributes, "accountId">,
+  ): GoalItem.Keys["PK"] {
+    return `ACCOUNT#${attrs.accountId}`;
   }
 
-  static getSK(accountId: string): GoalItem.Keys["SK"] {
-    return `ACCOUNT#${accountId}#GOAL`;
+  static getSK(
+    attrs: Pick<GoalItem.Attributes, "accountId">,
+  ): GoalItem.Keys["SK"] {
+    return `ACCOUNT#${attrs.accountId}#GOAL`;
   }
 }
 
