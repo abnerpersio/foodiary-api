@@ -3,6 +3,7 @@ import { dynamoClient } from "@/infra/clients/dynamo";
 import { Injectable } from "@/kernel/decorators/injectable";
 import { AppConfig } from "@/shared/config/app-config";
 import {
+  DeleteCommand,
   GetCommand,
   PutCommand,
   PutCommandInput,
@@ -75,6 +76,18 @@ export class MealRepository {
 
   async create(meal: Meal) {
     await dynamoClient.send(new PutCommand(this.getPutCommandInput(meal)));
+  }
+
+  async delete({ accountId, mealId }: MealRepository.FindByIdParams) {
+    const command = new DeleteCommand({
+      TableName: this.appConfig.db.dynamodb.mainTable,
+      Key: {
+        PK: MealItem.getPK({ accountId, id: mealId }),
+        SK: MealItem.getSK({ accountId, id: mealId }),
+      },
+    });
+
+    await dynamoClient.send(command);
   }
 }
 

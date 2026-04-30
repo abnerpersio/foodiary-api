@@ -67,6 +67,12 @@ export const ROUTES: Route[] = [
     private: true,
   },
   {
+    fnPath: "meals/delete-meal",
+    method: "DELETE",
+    route: "/meals/{mealId}",
+    private: true,
+  },
+  {
     fnPath: "profile/create-profile",
     method: "POST",
     route: "/profile",
