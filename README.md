@@ -16,19 +16,19 @@ A serverless API for AI-powered food diary and nutrition tracking. Users can log
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| Runtime | Node.js 22 on AWS Lambda |
-| Language | TypeScript |
-| HTTP | API Gateway V2 + Middy middleware |
-| Database | DynamoDB (single-table design) |
-| Auth | Amazon Cognito |
-| Storage | S3 + CloudFront CDN |
-| Queue | SQS (async meal processing) |
-| AI | OpenAI GPT-4o-mini (vision + audio) |
-| Email | SES + React Email templates |
-| IaC | AWS CDK |
-| Monitoring | Sentry |
+| Layer      | Technology                          |
+| ---------- | ----------------------------------- |
+| Runtime    | Node.js 22 on AWS Lambda            |
+| Language   | TypeScript                          |
+| HTTP       | API Gateway V2 + Middy middleware   |
+| Database   | DynamoDB (single-table design)      |
+| Auth       | Amazon Cognito                      |
+| Storage    | S3 + CloudFront CDN                 |
+| Queue      | SQS (async meal processing)         |
+| AI         | OpenAI GPT-4o-mini (vision + audio) |
+| Email      | SES + React Email templates         |
+| IaC        | AWS CDK                             |
+| Monitoring | Sentry                              |
 
 ---
 
@@ -53,28 +53,28 @@ Architecture follows **Clean Architecture** — business logic in `application/`
 
 ### Public
 
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/sign-up` | Create account |
-| POST | `/sign-in` | Log in with email and password |
-| POST | `/refresh-token` | Refresh access token |
-| POST | `/forgot-password` | Request a password reset email |
-| POST | `/reset-password` | Set a new password using the reset token |
-| GET | `/auth/code` | Exchange Google OAuth code for tokens |
+| Method | Route              | Description                              |
+| ------ | ------------------ | ---------------------------------------- |
+| POST   | `/sign-up`         | Create account                           |
+| POST   | `/sign-in`         | Log in with email and password           |
+| POST   | `/refresh-token`   | Refresh access token                     |
+| POST   | `/forgot-password` | Request a password reset email           |
+| POST   | `/reset-password`  | Set a new password using the reset token |
+| GET    | `/auth/code`       | Exchange Google OAuth code for tokens    |
 
 ### Private (requires authentication)
 
-| Method | Route | Description |
-|--------|-------|-------------|
-| GET | `/me` | Get the current user |
-| POST | `/profile` | Create user profile |
-| PUT | `/profile` | Update user profile |
-| POST | `/profile/picture` | Upload profile picture |
-| PUT | `/goals` | Update daily nutrition goals |
-| POST | `/meals` | Log a new meal (photo or audio) |
-| GET | `/meals` | List meals for a given date |
-| GET | `/meals/{mealId}` | Get a single meal |
-| DELETE | `/meals/{mealId}` | Delete a meal |
+| Method | Route              | Description                     |
+| ------ | ------------------ | ------------------------------- |
+| GET    | `/me`              | Get the current user            |
+| POST   | `/profile`         | Create user profile             |
+| PUT    | `/profile`         | Update user profile             |
+| POST   | `/profile/picture` | Upload profile picture          |
+| PUT    | `/goals`           | Update daily nutrition goals    |
+| POST   | `/meals`           | Log a new meal (photo or audio) |
+| GET    | `/meals`           | List meals for a given date     |
+| GET    | `/meals/{mealId}`  | Get a single meal               |
+| DELETE | `/meals/{mealId}`  | Delete a meal                   |
 
 ---
 
@@ -152,15 +152,11 @@ pnpm jest src/path/to/file.test.ts
 
 **Single-table DynamoDB** — All entities share one table using PK/SK patterns:
 
-| Entity | PK | SK |
-|--------|----|----|
-| Account | `ACCOUNT#{id}` | `#METADATA` |
-| Profile | `ACCOUNT#{accountId}` | `#PROFILE` |
-| Goal | `ACCOUNT#{accountId}` | `#GOAL` |
-| Meal | `ACCOUNT#{accountId}` | `MEAL#{mealId}` |
+| Entity  | PK                    | SK              |
+| ------- | --------------------- | --------------- |
+| Account | `ACCOUNT#{id}`        | `#METADATA`     |
+| Profile | `ACCOUNT#{accountId}` | `#PROFILE`      |
+| Goal    | `ACCOUNT#{accountId}` | `#GOAL`         |
+| Meal    | `ACCOUNT#{accountId}` | `MEAL#{mealId}` |
 
 ---
-
-## License
-
-Private project — all rights reserved.
